@@ -1,0 +1,43 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 60px);
+}
+
+.aboutCard {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+.mainTitle {
+  text-align: center;
+  margin-bottom: 32px;
+  color: #1C1E21;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section h4 {
+  margin-bottom: 16px;
+  color: #1C1E21;
+}
+
+.afdianContainer {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+} 
