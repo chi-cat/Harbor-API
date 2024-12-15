@@ -1,0 +1,12 @@
+.idea
+.vscode
+upload
+*.exe
+*.db
+build
+*.db-journal
+logs
+web/dist
+.env
+web/node_modules
+
