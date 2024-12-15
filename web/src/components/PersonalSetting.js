@@ -112,7 +112,7 @@ const PersonalSetting = () => {
         if (success) {
             setSystemToken(data);
             await copy(data);
-            showSuccess(t('令牌已重置并已复制到剪贴板'));
+            showSuccess(t('令牌已��置并已复制到剪贴板'));
         } else {
             showError(message);
         }
@@ -159,7 +159,7 @@ const PersonalSetting = () => {
     const handleSystemTokenClick = async (e) => {
         e.target.select();
         await copy(e.target.value);
-        showSuccess(t('系统令牌已复制到剪切板'));
+        showSuccess(t('系��令牌已复制到剪切板'));
     };
 
     const deleteAccount = async () => {
@@ -319,7 +319,7 @@ const PersonalSetting = () => {
                         </div>
                         <div style={{marginTop: 20}}>
                             <Typography.Text>
-                                {t('划转额度')}{renderQuotaWithPrompt(transferAmount)} {t('最低') + renderQuota(getQuotaPerUnit())}
+                                {t('划转额度')}{renderQuotaWithPrompt(transferAmount)} {t('最��') + renderQuota(getQuotaPerUnit())}
                             </Typography.Text>
                             <div>
                                 <InputNumber
@@ -365,53 +365,19 @@ const PersonalSetting = () => {
                                 </>
                             }
                         >
-                            <Descriptions row>
-                                <Descriptions.Item itemKey={t('当前余额')}>
-                                    {renderQuota(userState?.user?.quota)}
-                                </Descriptions.Item>
-                                <Descriptions.Item itemKey={t('历史消耗')}>
-                                    {renderQuota(userState?.user?.used_quota)}
-                                </Descriptions.Item>
-                                <Descriptions.Item itemKey={t('请求次数')}>
-                                    {userState.user?.request_count}
-                                </Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-                        <Card
-                            style={{marginTop: 10}}
-                            footer={
-                                <div>
-                                    <Typography.Text>{t('邀请链接')}</Typography.Text>
-                                    <Input
-                                        style={{marginTop: 10}}
-                                        value={affLink}
-                                        onClick={handleAffLinkClick}
-                                        readOnly
-                                    />
-                                </div>
-                            }
-                        >
-                            <Typography.Title heading={6}>{t('邀请信息')}</Typography.Title>
+                            <Typography.Title heading={6}>{t('账户信息')}</Typography.Title>
                             <div style={{marginTop: 10}}>
                                 <Descriptions row>
-                                    <Descriptions.Item itemKey={t('待使用收益')}>
+                                    <Descriptions.Item itemKey={t('当前余额')}>
                                         <span style={{color: 'rgba(var(--semi-red-5), 1)'}}>
-                                            {renderQuota(userState?.user?.aff_quota)}
+                                            {renderQuota(userState?.user?.quota)}
                                         </span>
-                                        <Button
-                                            type={'secondary'}
-                                            onClick={() => setOpenTransfer(true)}
-                                            size={'small'}
-                                            style={{marginLeft: 10}}
-                                        >
-                                            {t('划转')}
-                                        </Button>
                                     </Descriptions.Item>
-                                    <Descriptions.Item itemKey={t('总收益')}>
-                                        {renderQuota(userState?.user?.aff_history_quota)}
+                                    <Descriptions.Item itemKey={t('历史消耗')}>
+                                        {renderQuota(userState?.user?.used_quota)}
                                     </Descriptions.Item>
-                                    <Descriptions.Item itemKey={t('邀请人数')}>
-                                        {userState?.user?.aff_count}
+                                    <Descriptions.Item itemKey={t('请求次数')}>
+                                        {userState.user?.request_count}
                                     </Descriptions.Item>
                                 </Descriptions>
                             </div>

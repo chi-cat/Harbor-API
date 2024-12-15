@@ -15,8 +15,6 @@ export default function SettingsCreditLimit(props) {
   const [inputs, setInputs] = useState({
     QuotaForNewUser: '',
     PreConsumedQuota: '',
-    QuotaForInviter: '',
-    QuotaForInvitee: '',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -56,16 +54,16 @@ export default function SettingsCreditLimit(props) {
   }
 
   useEffect(() => {
-    const currentInputs = {};
-    for (let key in props.options) {
-      if (Object.keys(inputs).includes(key)) {
-        currentInputs[key] = props.options[key];
-      }
-    }
-    setInputs(currentInputs);
-    setInputsRow(structuredClone(currentInputs));
-    refForm.current.setValues(currentInputs);
+    setInputs({
+      ...inputs,
+      ...props.options,
+    });
+    setInputsRow({
+      ...inputsRow,
+      ...props.options,
+    });
   }, [props.options]);
+
   return (
     <>
       <Spin spinning={loading}>
@@ -94,51 +92,17 @@ export default function SettingsCreditLimit(props) {
               </Col>
               <Col span={6}>
                 <Form.InputNumber
-                  label={t('请求预扣费额度')}
+                  label={t('预扣费额度')}
                   field={'PreConsumedQuota'}
                   step={1}
                   min={0}
                   suffix={'Token'}
-                  extraText={t('请求结束后多退少补')}
+                  extraText={''}
                   placeholder={''}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
                       PreConsumedQuota: String(value),
-                    })
-                  }
-                />
-              </Col>
-              <Col span={6}>
-                <Form.InputNumber
-                  label={t('邀请新用户奖励额度')}
-                  field={'QuotaForInviter'}
-                  step={1}
-                  min={0}
-                  suffix={'Token'}
-                  extraText={''}
-                  placeholder={t('例如：2000')}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      QuotaForInviter: String(value),
-                    })
-                  }
-                />
-              </Col>
-              <Col span={6}>
-                <Form.InputNumber
-                  label={t('新用户使用邀请码奖励额度')}
-                  field={'QuotaForInvitee'}
-                  step={1}
-                  min={0}
-                  suffix={'Token'}
-                  extraText={''}
-                  placeholder={t('例如：1000')}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      QuotaForInvitee: String(value),
                     })
                   }
                 />

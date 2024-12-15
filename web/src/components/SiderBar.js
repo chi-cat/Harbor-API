@@ -53,13 +53,10 @@ const SiderBar = () => {
     home: '/',
     channel: '/channel',
     token: '/token',
-    redemption: '/redemption',
-    topup: '/topup',
     user: '/user',
     log: '/log',
     midjourney: '/midjourney',
     setting: '/setting',
-    about: '/about',
     chat: '/chat',
     detail: '/detail',
     pricing: '/pricing',
@@ -80,12 +77,6 @@ const SiderBar = () => {
             : 'tableHiddle',
       },
       {
-        text: t('体验中心'),
-        itemKey: 'playground',
-        to: '/playground',
-        icon: <IconCommentStroked />,
-      },
-      {
         text: t('渠道'),
         itemKey: 'channel',
         to: '/channel',
@@ -97,20 +88,6 @@ const SiderBar = () => {
         itemKey: 'token',
         to: '/token',
         icon: <IconKey />,
-      },
-
-      {
-        text: t('兑换码'),
-        itemKey: 'redemption',
-        to: '/redemption',
-        icon: <IconGift />,
-        className: isAdmin() ? 'semi-navigation-item-normal' : 'tableHiddle',
-      },
-      {
-        text: t('钱包'),
-        itemKey: 'topup',
-        to: '/topup',
-        icon: <IconCreditCard />,
       },
       {
         text: t('用户管理'),

@@ -16,8 +16,6 @@ import { UserContext } from './context/User';
 import Channel from './pages/Channel';
 import Token from './pages/Token';
 import EditChannel from './pages/Channel/EditChannel';
-import Redemption from './pages/Redemption';
-import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import Chat from './pages/Chat';
 import Chat2Link from './pages/Chat2Link';
@@ -32,9 +30,7 @@ import { StatusContext } from './context/Status';
 import { setStatusData } from './helpers/data.js';
 import { API, showError } from './helpers';
 
-const Home = lazy(() => import('./pages/Home'));
 const Detail = lazy(() => import('./pages/Detail'));
-const About = lazy(() => import('./pages/About'));
 
 function App() {
   return (
@@ -44,9 +40,11 @@ function App() {
         <Route
           path='/'
           element={
-            <Suspense fallback={<Loading></Loading>}>
-              <Home />
-            </Suspense>
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>}>
+                <Detail />
+              </Suspense>
+            </PrivateRoute>
           }
         />
         <Route
@@ -86,14 +84,6 @@ function App() {
           element={
             <PrivateRoute>
               <Playground />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/redemption'
-          element={
-            <PrivateRoute>
-              <Redemption />
             </PrivateRoute>
           }
         />
@@ -180,16 +170,6 @@ function App() {
           }
         />
         <Route
-          path='/topup'
-          element={
-            <PrivateRoute>
-              <Suspense fallback={<Loading></Loading>}>
-                <TopUp />
-              </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
           path='/log'
           element={
             <PrivateRoute>
@@ -232,14 +212,6 @@ function App() {
           element={
             <Suspense fallback={<Loading></Loading>}>
               <Pricing />
-            </Suspense>
-          }
-        />
-        <Route
-          path='/about'
-          element={
-            <Suspense fallback={<Loading></Loading>}>
-              <About />
             </Suspense>
           }
         />

@@ -55,11 +55,6 @@ const HeaderBar = () => {
       itemKey: 'pricing',
       to: '/pricing',
     },
-    {
-      text: t('关于'),
-      itemKey: 'about',
-      to: '/about',
-    },
   ];
 
   async function logout() {

@@ -19,27 +19,27 @@ const FooterBar = () => {
   const defaultFooter = (
     <div className='custom-footer'>
       <a
-        href='https://github.com/Calcium-Ion/new-api'
+        href='https://github.com/gtxy27/Harbor-API'
         target='_blank'
         rel='noreferrer'
       >
-        New API {import.meta.env.VITE_REACT_APP_VERSION}{' '}
+        Harbor-API {import.meta.env.VITE_REACT_APP_VERSION}{' '}
       </a>
       {t('由')}{' '}
       <a
-        href='https://github.com/Calcium-Ion'
+        href='https://github.com/gtxy27'
         target='_blank'
         rel='noreferrer'
       >
-        Calcium-Ion
+        gtxy27
       </a>{' '}
       {t('开发，基于')}{' '}
       <a
-        href='https://github.com/songquanpeng/one-api'
+        href='https://github.com/songquanpeng/new-api'
         target='_blank'
         rel='noreferrer'
       >
-        One API
+        New-API
       </a>
     </div>
   );
