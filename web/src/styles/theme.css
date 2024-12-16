@@ -1,0 +1,56 @@
+/* 全局主题变量 */
+:root {
+  --bg-color-light: var(--semi-color-bg-0);
+  --bg-color-dark: var(--semi-color-bg-1);
+  --text-color-light: var(--semi-color-text-0);
+  --text-color-dark: var(--semi-color-text-0);
+}
+
+/* 浅色模式 */
+body {
+  background-color: var(--bg-color-light);
+  color: var(--text-color-light);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 深色模式 */
+body[theme-mode='dark'] {
+  background-color: var(--bg-color-dark) !important;
+  color: var(--text-color-dark) !important;
+}
+
+/* 深色模式下的布局容器 */
+body[theme-mode='dark'] .semi-layout {
+  background-color: var(--semi-color-bg-1) !important;
+}
+
+/* 深色模式下的内容区域 */
+body[theme-mode='dark'] .semi-layout-content {
+  background-color: var(--semi-color-bg-1) !important;
+}
+
+/* 深色模式下的侧边栏 */
+body[theme-mode='dark'] .semi-layout-sider {
+  background-color: var(--semi-color-bg-2) !important;
+}
+
+/* 深色模式下的页眉 */
+body[theme-mode='dark'] .semi-layout-header {
+  background-color: var(--semi-color-bg-2) !important;
+}
+
+/* 深色模式下的页脚 */
+body[theme-mode='dark'] .semi-layout-footer {
+  background-color: var(--semi-color-bg-2) !important;
+}
+
+/* 保持聊天气泡样式不变 */
+.chat-message {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* 深色模式下的聊天容器 */
+body[theme-mode='dark'] .chat-container {
+  background-color: var(--semi-color-bg-1) !important;
+} 
