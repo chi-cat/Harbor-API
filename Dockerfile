@@ -9,7 +9,7 @@ COPY ./VERSION .
 RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) npm run build
 
 # 第二阶段：Go 构建阶段
-FROM golang AS builder2
+FROM golang as builder2
 
 ENV GO111MODULE=on \
     CGO_ENABLED=1 \
