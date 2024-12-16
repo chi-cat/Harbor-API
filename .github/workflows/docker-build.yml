@@ -41,4 +41,4 @@ jobs:
         with:
           context: .  # 使用当前目录作为构建上下文
           push: ${{ github.event_name != 'pull_request' }}  # 只有在不是 pull request 时推送镜像
-          tags: gtxy27/harbor-api:latest, gtxy27/harbor-api:${{ github.sha }}  # 镜像标签
+          tags: gtxy27/harbor-api:latest, gtxy27/harbor-api:${{ github.sha }}  # 标签
