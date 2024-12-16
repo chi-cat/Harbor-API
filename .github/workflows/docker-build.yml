@@ -35,6 +35,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}  # 从 GitHub secrets 中获取 DockerHub 用户名
           password: ${{ secrets.DOCKER_TOKEN }}  # 从 GitHub secrets 中获取 DockerHub 访问令牌
 
+
       # 5. 构建并推送 Docker 镜像
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
@@ -44,3 +45,7 @@ jobs:
           tags: gtxy27/harbor-api:latest, user/my-app:${{ github.sha }}  # 镜像标签，替换为您的 DockerHub 用户名和镜像名称
           # 这里的 `user/my-app` 需要替换为您的 DockerHub 用户名和镜像名称
           # `latest` 标签
+      - name: Debug Secrets
+        run: |
+          echo "DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}"
+          echo "DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}"
