@@ -1,0 +1,46 @@
+name: Docker Build and Push
+
+# 控制工作流何时运行
+on:
+  push:
+    branches:
+      - main        # 当推送到 main 分支时触发
+  pull_request:
+    branches:
+      - main        # 当发起 pull request 到 main 分支时触发
+
+# 工作流的任务
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 作为运行环境
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3  # 使用 GitHub 官方的 checkout 动作
+
+      # 2. 设置 QEMU 以支持多架构构建（如果不需要多架构，可以省略）
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2  # 配置 QEMU 以支持不同 CPU 架构
+
+      # 3. 设置 Docker Buildx（用于多架构镜像构建）
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2  # 配置 Docker Buildx 工具
+
+      # 4. 登录到 DockerHub
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'  # 只有在不是 pull request 时才登录并推送镜像
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}  # 从 GitHub secrets 中获取 DockerHub 用户名
+          password: ${{ secrets.DOCKER_PASSWORD }}  # 从 GitHub secrets 中获取 DockerHub 访问令牌
+
+      # 5. 构建并推送 Docker 镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .  # 使用当前目录作为构建上下文
+          push: ${{ github.event_name != 'pull_request' }}  # 只有在不是 pull request 时推送镜像
+          tags: gtxy27/harbor-api:latest, user/my-app:${{ github.sha }}  # 镜像标签，替换为您的 DockerHub 用户名和镜像名称
+          # 这里的 `user/my-app` 需要替换为您的 DockerHub 用户名和镜像名称
+          # `latest` 标签
