@@ -3,7 +3,7 @@
 ![new-api](/web/public/logo.png)
 
 # Harbor API
-
+## Harbor-API 为NewAPI 的下游作为个人玩家搭建的版本
 
 </div>
 
@@ -27,17 +27,16 @@
 ## 主要修改特点
 此分叉版本的主要变更如下：
 
-1. 更新重写了大部分的UI界面
-2. 删除了所有个人用不到的功能
-3. 更新了deepseek的价格处理函数
-4. 将web访问限制默认去除，课通过系统环境`GLOBAL_WEB_RATE_LIMIT_ENABLE`修改 `false/true`
-5. 首页默认为数据面板
+1. 删除了所有个人用不到的功能
+2. 更新了deepseek的价格处理函数，
+3. 将web访问限制默认去除，课通过系统环境`GLOBAL_WEB_RATE_LIMIT_ENABLE`修改 `false/true`
+4. 首页默认为数据面板
+5. 增加主页响应式布局
 
 ## 部署
 ### 部署要求
 - 本地数据库（默认）：SQLite（Docker 部署默认使用 SQLite，必须挂载 `/data` 目录到宿主机）
 - 远程数据库：MySQL 版本 >= 5.7.8，PgSQL 版本 >= 9.6
-
 
 
 ### 基于 Docker 进行部署
@@ -71,15 +70,9 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 ## 界面截图
 ![796df8d287b7b7bd7853b2497e7df511](https://github.com/user-attachments/assets/255b5e97-2d3a-4434-b4fa-e922ad88ff5a)
 
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/ad0e7aae-0203-471c-9716-2d83768927d4)
-![image](https://github.com/user-attachments/assets/29f81de5-33fc-4fc5-a5ff-f9b54b653c7c)
-
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/3ca0b282-00ff-4c96-bf9d-e29ef615c605)
-夜间模式  
 
 
-## 交流群
-<img src="https://github.com/user-attachments/assets/9ca0bc82-e057-4230-a28d-9f198fa022e3" width="200">
+
 
 ## 相关项目
 - [One API](https://github.com/songquanpeng/one-api)：原版项目
