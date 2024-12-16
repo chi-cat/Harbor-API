@@ -1,14 +1,10 @@
-<div align="center">
-
-![new-api](/web/public/logo.png)
 
 # Harbor API
-## Harbor-API 为NewAPI 的下游作为个人玩家搭建的版本
+## Harbor-API 为NewAPI 的下游作为个人玩家搭建的版本(非官方开发)
 
-</div>
 
 > [!NOTE]
-> 本项目为开源项目，在[New-API](https://github.com/Calcium-Ion/new-api)的基础上进行二次开发
+> 本项目为开源项目，在[New-API](https://github.com/Calcium-Ion/new-api)和[One-API](https://github.com/songquanpeng/one-api)的基础上进行二次开发
 
 > [!IMPORTANT]
 > 使用者必须在遵循 OpenAI 的[使用条款](https://openai.com/policies/terms-of-use)以及**法律法规**的情况下使用，不得用于非法用途。
@@ -16,7 +12,7 @@
 > 根据[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)的要求，请勿对中国地区公众提供一切未经备案的生成式人工智能服务。
 
 > [!TIP]
-> 最新版Docker镜像：`calciumion/new-api:latest`  
+> 最新版Docker镜像：`gtxy27/harbor-api:latest`  
 > 默认账号root 密码123456  
 > 更新指令：
 > ```
@@ -28,7 +24,7 @@
 此分叉版本的主要变更如下：
 
 1. 删除了所有个人用不到的功能
-2. 更新了deepseek的价格处理函数，
+2. 更新了deepseek的价格处理函数
 3. 将web访问限制默认去除，课通过系统环境`GLOBAL_WEB_RATE_LIMIT_ENABLE`修改 `false/true`
 4. 首页默认为数据面板
 5. 增加主页响应式布局
@@ -53,10 +49,10 @@ docker-compose up -d
 ### 直接使用 Docker 镜像
 ```shell
 # 使用 SQLite 的部署命令：
-docker run --name new-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/new-api:/data calciumion/new-api:latest
+docker run --name new-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/new-api:/data gtxy27/harbor-api:latest
 # 使用 MySQL 的部署命令，在上面的基础上添加 `-e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi"`，请自行修改数据库连接参数。
 # 例如：
-docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai -v /home/ubuntu/data/new-api:/data calciumion/new-api:latest
+docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai -v /home/ubuntu/data/new-api:/data gtxy27/harbor-api:latest
 ```
 
 
@@ -68,7 +64,8 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 [对接文档](Suno.md)
 
 ## 界面截图
-![796df8d287b7b7bd7853b2497e7df511](https://github.com/user-attachments/assets/255b5e97-2d3a-4434-b4fa-e922ad88ff5a)
+![img.png](img.png)
+
 
 
 

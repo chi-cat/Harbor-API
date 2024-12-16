@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../context/User';
 import { StatusContext } from '../context/Status';
 import { useTranslation } from 'react-i18next';
@@ -43,11 +43,28 @@ const SiderBar = () => {
   const defaultIsCollapsed =
     localStorage.getItem('default_collapse_sidebar') === 'true';
 
-  const [selectedKeys, setSelectedKeys] = useState(['home']);
+  const location = useLocation();
+
+  // 根据当前路径设置选中的key
+  const getCurrentKey = (pathname) => {
+    const path = pathname.split('/')[1] || 'home';
+    return path;
+  };
+
+  const [selectedKeys, setSelectedKeys] = useState([getCurrentKey(location.pathname)]);
   const [isCollapsed, setIsCollapsed] = useState(defaultIsCollapsed);
   const [chatItems, setChatItems] = useState([]);
   const theme = useTheme();
   const setTheme = useSetTheme();
+  
+  const controlPaths = ['/channel', '/token', '/user', '/log', '/midjourney', '/setting', '/task', '/playground'];
+  const showSidebar = controlPaths.some(path => location.pathname.startsWith(path));
+
+  // 监听路由变化，更新选中状态
+  useEffect(() => {
+    const currentKey = getCurrentKey(location.pathname);
+    setSelectedKeys([currentKey]);
+  }, [location.pathname]);
 
   const routerMap = {
     home: '/',
@@ -170,6 +187,10 @@ const SiderBar = () => {
     
     setIsCollapsed(localStorage.getItem('default_collapse_sidebar') === 'true');
   }, []);
+
+  if (!showSidebar) {
+    return null;
+  }
 
   return (
     <>

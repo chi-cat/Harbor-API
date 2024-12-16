@@ -120,6 +120,7 @@ const HeaderBar = () => {
                 pricing: '/pricing',
                 detail: '/detail',
                 home: '/',
+                channel: '/channel'
               };
               return (
                 <div onClick={(e) => {
@@ -136,7 +137,7 @@ const HeaderBar = () => {
                   <Link
                     className="header-bar-text"
                     style={{ textDecoration: 'none' }}
-                    to={routerMap[props.itemKey]}
+                    to={props.to || routerMap[props.itemKey]}
                   >
                     {itemElement}
                   </Link>
