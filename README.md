@@ -39,7 +39,7 @@
 ### 使用 Docker Compose 部署（推荐）
 ```shell
 # 下载项目
-git clone https://github.com/Calcium-Ion/new-api.git
+git clone https://github.com/gtxy27/Harbor-API
 cd new-api
 # 按需编辑 docker-compose.yml
 # 启动
@@ -64,7 +64,7 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 [对接文档](Suno.md)
 
 ## 界面截图
-![img.png](img.png)
+![img.png](img.png)-
 
 
 
