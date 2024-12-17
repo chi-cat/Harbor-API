@@ -35,17 +35,17 @@ services:
         max-size: "200k"
         max-file: "10"
 
-  nextchat:
-    image: yidadaa/chatgpt-next-web
-    container_name: nextchat
-    ports:
-      - "3002:3000"
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "200k"
-        max-file: "10"
+#  nextchat:
+#    image: yidadaa/chatgpt-next-web
+#    container_name: nextchat
+#    ports:
+#      - "3002:3000"
+#    restart: unless-stopped
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "200k"
+#        max-file: "10"
 
     depends_on:
    #   - redis
