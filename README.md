@@ -1,7 +1,9 @@
 
 # Harbor API
-## Harbor-API 为NewAPI 的下游作为个人玩家搭建的版本(非官方开发)
+## 
 
+> [!IMPORTANT]
+>  Harbor-API 为NewAPI 的下游作为个人玩家搭建的版本(非官方开发)，改个名字防止认错
 
 > [!NOTE]
 > 本项目为开源项目，在[New-API](https://github.com/Calcium-Ion/new-api)和[One-API](https://github.com/songquanpeng/one-api)的基础上进行二次开发
@@ -54,22 +56,6 @@ docker run --name new-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -
 # 例如：
 docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai -v /home/ubuntu/data/new-api:/data gtxy27/harbor-api:latest
 ```
-
-
-
-## Midjourney接口设置文档
-[对接文档](Midjourney.md)
-
-## Suno接口设置文档
-[对接文档](Suno.md)
-
-## 界面截图
-![img.png](img.png)-
-
-
-
-
-
 
 ## 相关项目
 - [One API](https://github.com/songquanpeng/one-api)：原版项目

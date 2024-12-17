@@ -223,7 +223,7 @@ func deepseekHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 		// 获取缓存命中的Token数量
 		cacheHitTokens = deepseekResp.Usage.PromptCacheHitTokens
 		// 计算实际的输入token (缓存命中部分按15%计费)
-		usage.PromptTokens = deepseekResp.Usage.PromptTokens - int(float64(cacheHitTokens)*0.85)
+		usage.PromptTokens = deepseekResp.Usage.PromptTokens - int(float64(cacheHitTokens)*0.90)
 		// 计算输出token和总token
 		usage.CompletionTokens = deepseekResp.Usage.CompletionTokens
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
