@@ -19,6 +19,33 @@ services:
     #      - NODE_TYPE=slave  # Uncomment for slave node in multi-node deployment
     #      - SYNC_FREQUENCY=60  # Uncomment if regular database syncing is needed
     #      - FRONTEND_BASE_URL=https://openai.justsong.cn  # Uncomment for multi-node deployment with front-end URL
+  openwebui:
+    image: ghcr.nju.edu.cn/open-webui/open-webui:main
+    container_name: openwebui
+    volumes:
+      - /var/ai/openwebui/data:/app/backend/data
+    ports:
+      - "3001:8080"
+    environment:
+      - HF_ENDPOINT=https://hf-mirror.com/
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  nextchat:
+    image: yidadaa/chatgpt-next-web
+    container_name: nextchat
+    ports:
+      - "3002:3000"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
 
     depends_on:
    #   - redis
@@ -40,7 +67,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: 123456  # Ensure this matches the password in SQL_DSN
-      MYSQL_DATABASE: new-api
+      MYSQL_DATABASE: harbor-api
     volumes:
       - mysql_data:/var/lib/mysql
     # ports:
