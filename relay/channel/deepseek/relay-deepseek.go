@@ -85,7 +85,6 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 	responseId := fmt.Sprintf("chatcmpl-%s", common.GetUUID())
 	createdTime := common.GetTimestamp()
 	var lastResponseText string
-	var cacheHitTokens int
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
@@ -128,15 +127,15 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 					usage.TotalTokens = streamResponse.Usage.PromptTokens + streamResponse.Usage.CompletionTokens
 
 					// 添加详细日志
-					common.LogInfo(c, fmt.Sprintf(
-						"Token calculation: cacheHit=%d, cacheMiss=%d, 原始Token数= %d,实际计费Token数=%d, completion=%d, total=%d",
-						cacheHitTokens,
-						streamResponse.Usage.PromptCacheMissTokens,
-						streamResponse.Usage.PromptTokens,
-						usage.PromptTokens,
-						usage.CompletionTokens,
-						usage.TotalTokens,
-					))
+					//common.LogInfo(c, fmt.Sprintf(
+					//	"Token calculation: cacheHit=%d, cacheMiss=%d, 原始Token数= %d,实际计费Token数=%d, completion=%d, total=%d",
+					//	cacheHitTokens,
+					//	streamResponse.Usage.PromptCacheMissTokens,
+					//	streamResponse.Usage.PromptTokens,
+					//	usage.PromptTokens,
+					//	usage.CompletionTokens,
+					//	usage.TotalTokens,
+					//))
 				}
 
 				// 处理增量响应和工具调用
