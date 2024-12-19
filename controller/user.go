@@ -10,10 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"one-api/constant"
-
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"one-api/constant"
 )
 
 type LoginRequest struct {

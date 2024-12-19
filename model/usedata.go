@@ -2,10 +2,11 @@ package model
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"one-api/common"
 	"sync"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // QuotaData 柱状图数据
@@ -130,3 +131,62 @@ func GetAllQuotaDates(startTime int64, endTime int64, username string) (quotaDat
 	err = DB.Table("quota_data").Select("model_name, sum(count) as count, sum(quota) as quota, created_at").Where("created_at >= ? and created_at <= ?", startTime, endTime).Group("model_name, created_at").Find(&quotaDatas).Error
 	return quotaDatas, err
 }
+
+type TokenCacheHitStat struct {
+	Time           string  `json:"time"`
+	NonCacheTokens float64 `json:"non_cache_tokens"`
+	CacheHitTokens float64 `json:"cache_hit_tokens"`
+}
+
+func GetTokenCacheHitStat(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, timeGranularity int64) (stats []TokenCacheHitStat, err error) {
+	var tx *gorm.DB
+	if logType == LogTypeUnknown {
+		tx = LOG_DB
+	} else {
+		tx = LOG_DB.Where("type = ?", logType)
+	}
+
+	if modelName != "" {
+		tx = tx.Where("model_name like ?", modelName)
+	}
+	if username != "" {
+		tx = tx.Where("username = ?", username)
+	}
+	if tokenName != "" {
+		tx = tx.Where("token_name = ?", tokenName)
+	}
+	if startTimestamp != 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp != 0 {
+		tx = tx.Where("created_at <= ?", endTimestamp)
+	}
+
+	// 修改SQL查询语法
+	query := tx.Table("logs").
+		Select("created_at - MOD(created_at, ?) as time_bucket, "+
+			"CAST(SUM(prompt_tokens - prompt_cache_hit_tokens * 0.15) as DECIMAL(10,0)) as non_cache_tokens, "+
+			"CAST(SUM(prompt_cache_hit_tokens) as DECIMAL(10,0)) as cache_hit_tokens", timeGranularity).
+		Group("time_bucket").
+		Order("time_bucket")
+
+	rows, err := query.Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var timeBucket int64
+		var stat TokenCacheHitStat
+		if err := rows.Scan(&timeBucket, &stat.NonCacheTokens, &stat.CacheHitTokens); err != nil {
+			return nil, err
+		}
+		stat.Time = time.Unix(timeBucket, 0).Format("2006-01-02 15:04:05")
+		stats = append(stats, stat)
+	}
+
+	return stats, nil
+}
+
+// ... existing code ...

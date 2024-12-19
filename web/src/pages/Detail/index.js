@@ -1,8 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { initVChartSemiTheme } from '@visactor/vchart-semi-theme';
-
 import { Button, Card, Col, Descriptions, Form, Layout, Row, Spin, Tabs } from '@douyinfe/semi-ui';
-import { VChart } from "@visactor/react-vchart";
 import {
   API,
   isAdmin,
@@ -15,13 +13,14 @@ import {
   modelColorMap,
   renderNumber,
   renderQuota,
-  renderQuotaNumberWithDigit,
-  stringToColor,
   modelToColor,
 } from '../../helpers/render';
 import { UserContext } from '../../context/User/index.js';
 import { StyleContext } from '../../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
+import ConsumptionChart from '../../components/charts/ConsumptionChart';
+import CallCountChart from '../../components/charts/CallCountChart';
+import TokenCacheChart from '../../components/charts/TokenCacheChart';
 
 const Detail = (props) => {
   const { t } = useTranslation();
@@ -43,8 +42,7 @@ const Detail = (props) => {
     channel: '',
     data_export_default_time: '',
   });
-  const { username, model_name, start_timestamp, end_timestamp, channel } =
-    inputs;
+  const { username, model_name, start_timestamp, end_timestamp } = inputs;
   const isAdminUser = isAdmin();
   const initialized = useRef(false);
   const [loading, setLoading] = useState(false);
@@ -57,128 +55,7 @@ const Detail = (props) => {
   );
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
-  const [spec_pie, setSpecPie] = useState({
-    type: 'pie',
-    data: [{
-      id: 'id0',
-      values: pieData
-    }],
-    outerRadius: 0.8,
-    innerRadius: 0.5,
-    padAngle: 0.6,
-    valueField: 'value',
-    categoryField: 'type',
-    pie: {
-      style: {
-        cornerRadius: 10,
-      },
-      state: {
-        hover: {
-          outerRadius: 0.85,
-          stroke: '#000',
-          lineWidth: 1,
-        },
-        selected: {
-          outerRadius: 0.85,
-          stroke: '#000',
-          lineWidth: 1,
-        },
-      },
-    },
-    title: {
-      visible: true,
-      text: t('模型调用次数占比'),
-      subtext: `${t('总计')}：${renderNumber(times)}`,
-    },
-    legends: {
-      visible: true,
-      orient: 'left',
-    },
-    label: {
-      visible: true,
-    },
-    tooltip: {
-      mark: {
-        content: [
-          {
-            key: (datum) => datum['type'],
-            value: (datum) => renderNumber(datum['value']),
-          },
-        ],
-      },
-    },
-    color: {
-      specified: modelColorMap,
-    },
-  });
-  const [spec_line, setSpecLine] = useState({
-    type: 'bar',
-    data: [{
-      id: 'barData',
-      values: lineData
-    }],
-    xField: 'Time',
-    yField: 'Usage',
-    seriesField: 'Model',
-    stack: true,
-    legends: {
-      visible: true,
-      selectMode: 'single',
-    },
-    title: {
-      visible: true,
-      text: t('模型消耗分布'),
-      subtext: `${t('总计')}：${renderQuota(consumeQuota, 2)}`,
-    },
-    bar: {
-      state: {
-        hover: {
-          stroke: '#000',
-          lineWidth: 1,
-        },
-      },
-    },
-    tooltip: {
-      mark: {
-        content: [
-          {
-            key: (datum) => datum['Model'],
-            value: (datum) =>
-              renderQuotaNumberWithDigit(parseFloat(datum['Usage']), 4),
-          },
-        ],
-      },
-      dimension: {
-        content: [
-          {
-            key: (datum) => datum['Model'],
-            value: (datum) => datum['Usage'],
-          },
-        ],
-        updateContent: (array) => {
-          array.sort((a, b) => b.value - a.value);
-          let sum = 0;
-          for (let i = 0; i < array.length; i++) {
-            sum += parseFloat(array[i].value);
-            array[i].value = renderQuotaNumberWithDigit(
-              parseFloat(array[i].value),
-              4,
-            );
-          }
-          array.unshift({
-            key: t('总计'),
-            value: renderQuotaNumberWithDigit(sum, 4),
-          });
-          return array;
-        },
-      },
-    },
-    color: {
-      specified: modelColorMap,
-    },
-  });
-
-  // 添加一个新的状态来存储模型-颜色映射
+  const [tokenCacheData, setTokenCacheData] = useState([]);
   const [modelColors, setModelColors] = useState({});
 
   const handleInputChange = (value, name) => {
@@ -234,12 +111,48 @@ const Detail = (props) => {
     }
   };
 
+  const loadTokenCacheData = async () => {
+    try {
+      let url = '';
+      let localStartTimestamp = Date.parse(start_timestamp) / 1000;
+      let localEndTimestamp = Date.parse(end_timestamp) / 1000;
+      url = `/api/log/token/cache/hit?start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&default_time=${dataExportDefaultTime}`;
+      if (username) url += `&username=${username}`;
+      if (model_name) url += `&model_name=${model_name}`;
+      
+      const res = await API.get(url);
+      const { success, message, data } = res.data;
+      if (success) {
+        const formattedData = [];
+        data.forEach(item => {
+          formattedData.push({
+            Time: item.time,
+            Type: 'Non-Cache Tokens',
+            Value: item.non_cache_tokens
+          });
+          formattedData.push({
+            Time: item.time,
+            Type: 'Cache Hit Tokens',
+            Value: item.cache_hit_tokens
+          });
+        });
+        setTokenCacheData(formattedData);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+
   const refresh = async () => {
     await loadQuotaData();
+    await loadTokenCacheData();
   };
 
   const initChart = async () => {
     await loadQuotaData();
+    await loadTokenCacheData();
   };
 
   const updateChartData = (data) => {
@@ -286,7 +199,6 @@ const Detail = (props) => {
     // 处理柱状图数据
     let timePoints = Array.from(uniqueTimes);
     if (timePoints.length < 7) {
-      // 根据时间粒度生成合适的时间点
       const generateTimePoints = () => {
         let lastTime = Math.max(...data.map(item => item.created_at));
         let points = [];
@@ -322,31 +234,6 @@ const Detail = (props) => {
     // 排序
     newPieData.sort((a, b) => b.value - a.value);
     newLineData.sort((a, b) => a.Time.localeCompare(b.Time));
-
-    // 更新图表配置和数据
-    setSpecPie(prev => ({
-      ...prev,
-      data: [{ id: 'id0', values: newPieData }],
-      title: {
-        ...prev.title,
-        subtext: `${t('总计')}：${renderNumber(totalTimes)}`
-      },
-      color: {
-        specified: newModelColors
-      }
-    }));
-
-    setSpecLine(prev => ({
-      ...prev,
-      data: [{ id: 'barData', values: newLineData }],
-      title: {
-        ...prev.title,
-        subtext: `${t('总计')}：${renderQuota(totalQuota, 2)}`
-      },
-      color: {
-        specified: newModelColors
-      }
-    }));
     
     setPieData(newPieData);
     setLineData(newLineData);
@@ -506,22 +393,22 @@ const Detail = (props) => {
             <Card style={{marginTop: 20}}>
               <Tabs type="line" defaultActiveKey="1">
                 <Tabs.TabPane tab={t('消耗分布')} itemKey="1">
-                  <div style={{ height: 500 }}>
-                    <VChart
-                      spec={spec_line}
-                      option={{ mode: "desktop-browser" }}
-                    />
-                  </div>
+                  <ConsumptionChart 
+                    data={lineData} 
+                    modelColors={modelColors} 
+                    consumeQuota={consumeQuota} 
+                  />
                 </Tabs.TabPane>
                 <Tabs.TabPane tab={t('调用次数分布')} itemKey="2">
-                  <div style={{ height: 500 }}>
-                    <VChart
-                      spec={spec_pie}
-                      option={{ mode: "desktop-browser" }}
-                    />
-                  </div>
+                  <CallCountChart 
+                    data={pieData} 
+                    modelColors={modelColors} 
+                    times={times} 
+                  />
                 </Tabs.TabPane>
-
+                <Tabs.TabPane tab={t('token缓存命中分布')} itemKey="3">
+                  <TokenCacheChart data={tokenCacheData} />
+                </Tabs.TabPane>
               </Tabs>
             </Card>
           </Spin>

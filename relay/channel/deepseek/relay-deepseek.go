@@ -104,7 +104,7 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 			if !strings.HasPrefix(data, "data: [DONE]") {
 				// 解析响应数据
 				data = data[6:] // 移除 "data: " 前缀
-				var streamResponse ChatCompletionsStreamResponse
+				var streamResponse dto.ChatCompletionsStreamResponse
 				err := json.Unmarshal([]byte(data), &streamResponse)
 				if err != nil {
 					common.SysError("error unmarshalling stream response: " + err.Error())
@@ -118,34 +118,26 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 
 				// 只在最后一个包含 usage 的响应中处理 token 计算
 				if streamResponse.Usage != nil && streamResponse.Usage.TotalTokens != 0 {
-					// 获取缓存命中的Token数量
-					cacheHitTokens = streamResponse.Usage.PromptCacheHitTokens
 
 					// 计算实际的输入token (缓存命中部分按15%计费)
-					usage.PromptTokens = streamResponse.Usage.PromptTokens - int(float64(cacheHitTokens)*0.85)
+					usage.PromptTokens = streamResponse.Usage.PromptTokens - int(float64(streamResponse.Usage.PromptCacheHitTokens)*0.85)
+					usage.PromptCacheHitTokens = streamResponse.Usage.PromptCacheHitTokens // 确保设置缓存命中token数
 
 					// 计算输出token和总token
 					usage.CompletionTokens = streamResponse.Usage.CompletionTokens
 					usage.TotalTokens = streamResponse.Usage.PromptTokens + streamResponse.Usage.CompletionTokens
 
 					// 添加详细日志
-					// common.LogInfo(c, fmt.Sprintf(
-					// 	"Token calculation: cacheHit=%d, cacheMiss=%d, 原始Token数= %d,实际计费Token数=%d, completion=%d, total=%d",
-					// 	cacheHitTokens,
-					// 	streamResponse.Usage.PromptCacheMissTokens,
-					// 	streamResponse.Usage.PromptTokens,
-					// 	usage.PromptTokens,
-					// 	usage.CompletionTokens,
-					// 	usage.TotalTokens,
-					// ))
+					common.LogInfo(c, fmt.Sprintf(
+						"Token calculation: cacheHit=%d, cacheMiss=%d, 原始Token数= %d,实际计费Token数=%d, completion=%d, total=%d",
+						cacheHitTokens,
+						streamResponse.Usage.PromptCacheMissTokens,
+						streamResponse.Usage.PromptTokens,
+						usage.PromptTokens,
+						usage.CompletionTokens,
+						usage.TotalTokens,
+					))
 				}
-
-				// 在处理流式响应的开始添加日志 日志排错函数
-				// if streamResponse.Usage != nil {
-				// 	common.LogInfo(c, fmt.Sprintf("Received chunk with usage: %+v", streamResponse.Usage))
-				// } else {
-				// 	common.LogInfo(c, "Received chunk without usage")
-				// }
 
 				// 处理增量响应和工具调用
 				if len(streamResponse.Choices) > 0 {
@@ -160,40 +152,26 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 						if len(choice.Delta.ToolCalls) > toolCount {
 							toolCount = len(choice.Delta.ToolCalls)
 						}
-						for _, tool := range choice.Delta.ToolCalls {
-							responseTextBuilder.WriteString(tool.Function.Name)
-							responseTextBuilder.WriteString(tool.Function.Arguments)
-						}
 					}
 				}
 
-				// 序列化并发送响应
-				jsonResponse, err := json.Marshal(streamResponse)
+				responseBytes, err := json.Marshal(streamResponse)
 				if err != nil {
 					common.SysError("error marshalling stream response: " + err.Error())
 					return true
 				}
-				c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
+				c.Writer.Write([]byte("data: "))
+				c.Writer.Write(responseBytes)
+				c.Writer.Write([]byte("\n\n"))
 			} else {
-				c.Render(-1, common.CustomEvent{Data: data})
+				c.Writer.Write([]byte(data))
+				c.Writer.Write([]byte("\n\n"))
 			}
 			return true
-		case <-ticker.C:
-			// 超时处理
-			common.LogError(c, "streaming timeout")
-			return false
 		case <-stopChan:
-			// 发送最终的 usage 信息
-			if info.ShouldIncludeUsage {
-				// 确保有有效的 usage 数据
-				if usage.TotalTokens > 0 {
-					finalResponse := service.GenerateFinalUsageResponse(responseId, createdTime, info.UpstreamModelName, usage)
-					service.ObjectData(c, finalResponse)
-				} else {
-					common.LogWarn(c, "No usage information received in stream")
-				}
-			}
-			service.Done(c)
+			return false
+		case <-ticker.C:
+			common.SysError("streaming timeout")
 			return false
 		}
 	})
@@ -216,14 +194,14 @@ func deepseekHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
-	var cacheHitTokens int
+
 	// 计算实际的 Token 使用量
 	usage := dto.Usage{}
 	if deepseekResp.Usage != nil && deepseekResp.Usage.TotalTokens != 0 {
-		// 获取缓存命中的Token数量
-		cacheHitTokens = deepseekResp.Usage.PromptCacheHitTokens
+
 		// 计算实际的输入token (缓存命中部分按15%计费)
-		usage.PromptTokens = deepseekResp.Usage.PromptTokens - int(float64(cacheHitTokens)*0.90)
+		usage.PromptTokens = deepseekResp.Usage.PromptTokens - int(float64(deepseekResp.Usage.PromptCacheHitTokens)*0.85)
+		usage.PromptCacheHitTokens = deepseekResp.Usage.PromptCacheHitTokens // 确保设置缓存命中token数
 		// 计算输出token和总token
 		usage.CompletionTokens = deepseekResp.Usage.CompletionTokens
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens

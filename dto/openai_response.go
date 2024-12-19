@@ -133,4 +133,6 @@ type Usage struct {
 	TotalTokens            int                `json:"total_tokens"`
 	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
 	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
+	PromptCacheHitTokens   int                `json:"prompt_cache_hit_tokens"`
+	PromptCacheMissTokens  int                `json:"prompt_cache_miss_tokens"`
 }

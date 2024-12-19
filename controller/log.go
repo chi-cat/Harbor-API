@@ -207,3 +207,41 @@ func DeleteHistoryLogs(c *gin.Context) {
 	})
 	return
 }
+
+func GetTokenCacheHitStats(c *gin.Context) {
+	logType, _ := strconv.Atoi(c.Query("type"))
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	tokenName := c.Query("token_name")
+	username := c.Query("username")
+	modelName := c.Query("model_name")
+	defaultTime := c.Query("default_time")
+
+	// 根据时间粒度设置
+	var timeGranularity int64
+	switch defaultTime {
+	case "hour":
+		timeGranularity = 3600
+	case "day":
+		timeGranularity = 86400
+	case "week":
+		timeGranularity = 604800
+	default:
+		timeGranularity = 3600
+	}
+
+	stats, err := model.GetTokenCacheHitStat(logType, startTimestamp, endTimestamp, modelName, username, tokenName, timeGranularity)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+	return
+}

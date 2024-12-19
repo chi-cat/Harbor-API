@@ -84,5 +84,3 @@ func (a *Adaptor) GetModelList() []string {
 func (a *Adaptor) GetChannelName() string {
 	return ChannelName
 }
-
-// GetCacheTokens 获取缓存 token 信息，用于后续价格计算

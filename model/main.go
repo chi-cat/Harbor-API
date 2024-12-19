@@ -34,7 +34,7 @@ func createRootAccountIfNeed() error {
 			Status:      common.UserStatusEnabled,
 			DisplayName: "Root User",
 			AccessToken: nil,
-			Quota:       9999999999999,
+			Quota:       100000000,
 		}
 		DB.Create(&rootUser)
 	}
@@ -210,6 +210,41 @@ func migrateLOGDB() error {
 	if err = LOG_DB.AutoMigrate(&Log{}); err != nil {
 		return err
 	}
+
+	// 检查PromptCacheHitTokens字段是否存在
+	var exists bool
+
+	if common.UsingMySQL {
+		var result string
+		err = LOG_DB.Raw("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'logs' AND COLUMN_NAME = 'prompt_cache_hit_tokens'").Scan(&result).Error
+		exists = result != ""
+	} else if common.UsingPostgreSQL {
+		err = LOG_DB.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'logs' AND column_name = 'prompt_cache_hit_tokens')").Scan(&exists).Error
+	} else {
+		err = LOG_DB.Raw("SELECT COUNT(*) > 0 FROM pragma_table_info('logs') WHERE name = 'prompt_cache_hit_tokens'").Scan(&exists).Error
+	}
+
+	if err != nil {
+		common.SysError("检查PromptCacheHitTokens字段失败: " + err.Error())
+		return err
+	}
+
+	// 如果字段不存在，添加该字段
+	if !exists {
+		if common.UsingPostgreSQL {
+			err = LOG_DB.Exec("ALTER TABLE logs ADD COLUMN prompt_cache_hit_tokens integer DEFAULT 0").Error
+		} else {
+			err = LOG_DB.Exec("ALTER TABLE logs ADD COLUMN prompt_cache_hit_tokens int DEFAULT 0").Error
+		}
+		if err != nil {
+			common.SysError("添加PromptCacheHitTokens字段失败: " + err.Error())
+			return err
+		}
+		common.SysLog("成功添加PromptCacheHitTokens字段到logs表")
+	} else {
+		common.SysLog("PromptCacheHitTokens字段已存在于logs表中")
+	}
+
 	return nil
 }
 

@@ -36,7 +36,7 @@ services:
         max-file: "10"
 
 #  nextchat:
-#    image: yidadaa/chatgpt-next-web
+#    image: tianzhentech/chatgpt-next-web:latest
 #    container_name: nextchat
 #    ports:
 #      - "3002:3000"

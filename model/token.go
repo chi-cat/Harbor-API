@@ -3,13 +3,12 @@ package model
 import (
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"one-api/common"
 	"one-api/constant"
 	relaycommon "one-api/relay/common"
 	"strconv"
 	"strings"
-
-	"gorm.io/gorm"
 )
 
 type Token struct {

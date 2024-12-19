@@ -13,22 +13,23 @@ import (
 )
 
 type Log struct {
-	Id               int    `json:"id" gorm:"index:idx_created_at_id,priority:1"`
-	UserId           int    `json:"user_id" gorm:"index"`
-	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
-	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
-	Content          string `json:"content"`
-	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
-	TokenName        string `json:"token_name" gorm:"index;default:''"`
-	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	Quota            int    `json:"quota" gorm:"default:0"`
-	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
-	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
-	UseTime          int    `json:"use_time" gorm:"default:0"`
-	IsStream         bool   `json:"is_stream" gorm:"default:false"`
-	ChannelId        int    `json:"channel" gorm:"index"`
-	TokenId          int    `json:"token_id" gorm:"default:0;index"`
-	Other            string `json:"other"`
+	Id                   int    `json:"id" gorm:"index:idx_created_at_id,priority:1"`
+	UserId               int    `json:"user_id" gorm:"index"`
+	CreatedAt            int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
+	Type                 int    `json:"type" gorm:"index:idx_created_at_type"`
+	Content              string `json:"content"`
+	Username             string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
+	TokenName            string `json:"token_name" gorm:"index;default:''"`
+	ModelName            string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
+	Quota                int    `json:"quota" gorm:"default:0"`
+	PromptTokens         int    `json:"prompt_tokens" gorm:"default:0"`
+	CompletionTokens     int    `json:"completion_tokens" gorm:"default:0"`
+	PromptCacheHitTokens int    `json:"prompt_cache_hit_tokens" gorm:"default:0"`
+	UseTime              int    `json:"use_time" gorm:"default:0"`
+	IsStream             bool   `json:"is_stream" gorm:"default:false"`
+	ChannelId            int    `json:"channel" gorm:"index"`
+	TokenId              int    `json:"token_id" gorm:"default:0;index"`
+	Other                string `json:"other"`
 }
 
 const (
@@ -70,29 +71,30 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, userQuota int, useTimeSeconds int, isStream bool, other map[string]interface{}) {
-	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d, content=%s", userId, userQuota, channelId, promptTokens, completionTokens, modelName, tokenName, quota, content))
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, promptCacheHitTokens int, modelName string, tokenName string, quota int, content string, tokenId int, userQuota int, useTimeSeconds int, isStream bool, other map[string]interface{}) {
+	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, promptCacheHitTokens=%d, modelName=%s, tokenName=%s, quota=%d, content=%s", userId, userQuota, channelId, promptTokens, completionTokens, promptCacheHitTokens, modelName, tokenName, quota, content))
 	if !common.LogConsumeEnabled {
 		return
 	}
 	username, _ := CacheGetUsername(userId)
 	otherStr := common.MapToJsonStr(other)
 	log := &Log{
-		UserId:           userId,
-		Username:         username,
-		CreatedAt:        common.GetTimestamp(),
-		Type:             LogTypeConsume,
-		Content:          content,
-		PromptTokens:     promptTokens,
-		CompletionTokens: completionTokens,
-		TokenName:        tokenName,
-		ModelName:        modelName,
-		Quota:            quota,
-		ChannelId:        channelId,
-		TokenId:          tokenId,
-		UseTime:          useTimeSeconds,
-		IsStream:         isStream,
-		Other:            otherStr,
+		UserId:               userId,
+		Username:             username,
+		CreatedAt:            common.GetTimestamp(),
+		Type:                 LogTypeConsume,
+		Content:              content,
+		PromptTokens:         promptTokens,
+		CompletionTokens:     completionTokens,
+		PromptCacheHitTokens: promptCacheHitTokens,
+		TokenName:            tokenName,
+		ModelName:            modelName,
+		Quota:                quota,
+		ChannelId:            channelId,
+		TokenId:              tokenId,
+		UseTime:              useTimeSeconds,
+		IsStream:             isStream,
+		Other:                otherStr,
 	}
 	err := LOG_DB.Create(log).Error
 	if err != nil {
