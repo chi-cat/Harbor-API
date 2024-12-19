@@ -60,8 +60,6 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 ## 相关项目
 - [One API](https://github.com/songquanpeng/one-api)：原版项目
 - [Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy)：Midjourney接口支持
-- [chatnio](https://github.com/Deeptrain-Community/chatnio)：下一代 AI 一站式 B/C 端解决方案
-- [neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)：用key查询使用额度
 - [New API](https://github.com/Calcium-Ion/new-api) 上游项目
 
 
