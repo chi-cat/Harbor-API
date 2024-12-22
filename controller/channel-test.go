@@ -141,7 +141,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 	milliseconds := tok.Sub(tik).Milliseconds()
 	consumedTime := float64(milliseconds) / 1000.0
 	other := service.GenerateTextOtherInfo(c, meta, modelRatio, 1, completionRatio, modelPrice)
-	model.RecordConsumeLog(c, 1, channel.Id, usage.PromptTokens, usage.CompletionTokens, usage.PromptCacheHitTokens, testModel, "模型测试", quota, "模型测试", 0, quota, int(consumedTime), false, other)
+	model.RecordConsumeLog(c, 1, channel.Id, usage.PromptTokens, usage.CompletionTokens, 0, testModel, "模型测试", quota, "模型测试", 0, quota, int(consumedTime), false, other)
 	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return nil, nil
 }
@@ -153,6 +153,8 @@ func buildTestRequest(model string) *dto.GeneralOpenAIRequest {
 	}
 	if strings.HasPrefix(model, "o1-") {
 		testRequest.MaxCompletionTokens = 1
+	} else if strings.HasPrefix(model, "gemini-2.0-flash-thinking") {
+		testRequest.MaxTokens = 2
 	} else {
 		testRequest.MaxTokens = 1
 	}

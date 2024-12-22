@@ -1,10 +1,11 @@
 package gemini
 
 type GeminiChatRequest struct {
-	Contents         []GeminiChatContent        `json:"contents"`
-	SafetySettings   []GeminiChatSafetySettings `json:"safety_settings,omitempty"`
-	GenerationConfig GeminiChatGenerationConfig `json:"generation_config,omitempty"`
-	Tools            []GeminiChatTools          `json:"tools,omitempty"`
+	Contents           []GeminiChatContent        `json:"contents"`
+	SafetySettings     []GeminiChatSafetySettings `json:"safety_settings,omitempty"`
+	GenerationConfig   GeminiChatGenerationConfig `json:"generation_config,omitempty"`
+	Tools              []GeminiChatTools          `json:"tools,omitempty"`
+	SystemInstructions *GeminiChatContent         `json:"system_instruction,omitempty"`
 }
 
 type GeminiInlineData struct {
@@ -34,16 +35,19 @@ type GeminiChatSafetySettings struct {
 }
 
 type GeminiChatTools struct {
+	GoogleSearch         any `json:"googleSearch,omitempty"`
 	FunctionDeclarations any `json:"functionDeclarations,omitempty"`
 }
 
 type GeminiChatGenerationConfig struct {
-	Temperature     float64  `json:"temperature,omitempty"`
-	TopP            float64  `json:"topP,omitempty"`
-	TopK            float64  `json:"topK,omitempty"`
-	MaxOutputTokens uint     `json:"maxOutputTokens,omitempty"`
-	CandidateCount  int      `json:"candidateCount,omitempty"`
-	StopSequences   []string `json:"stopSequences,omitempty"`
+	Temperature      float64  `json:"temperature,omitempty"`
+	TopP             float64  `json:"topP,omitempty"`
+	TopK             float64  `json:"topK,omitempty"`
+	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
+	CandidateCount   int      `json:"candidateCount,omitempty"`
+	StopSequences    []string `json:"stopSequences,omitempty"`
+	ResponseMimeType string   `json:"responseMimeType,omitempty"`
+	ResponseSchema   any      `json:"responseSchema,omitempty"`
 }
 
 type GeminiChatCandidate struct {
