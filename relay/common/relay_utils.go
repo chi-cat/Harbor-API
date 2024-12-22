@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+var StopFinishReason = "stop"
+
 func GetFullRequestURL(baseURL string, requestURL string, channelType int) string {
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
 
