@@ -23,7 +23,19 @@ jobs:
         with:
           go-version: '1.21'  # 根据项目需求调整 Go 版本
 
-      - name: Build
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: cd web && npm install
+
+      - name: Build frontend
+        run: cd web && DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat ../VERSION) npm run build
+
+      - name: Build backend
         run: make build ARCH=${{ matrix.arch }}  # 传递架构参数给构建命令
 
       - name: Upload Artifacts
