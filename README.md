@@ -62,4 +62,5 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 - [Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy)：Midjourney接口支持
 - [New API](https://github.com/Calcium-Ion/new-api) 上游项目
 
+qq群：768124641
 
