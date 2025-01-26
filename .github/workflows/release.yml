@@ -3,131 +3,86 @@ name: Release Build
 on:
   push:
     tags:
-      - 'v*'  # 匹配 v 开头的 tag，比如 v1.0.0
+      - 'v*'
     branches:
       - main 
-# 添加权限配置
 permissions:
   contents: write
   packages: write
-  actions: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # 增加超时时间到 60 分钟
+    timeout-minutes: 30
     strategy:
       matrix:
         platform:
           - { os: linux, arch: amd64 }
           - { os: linux, arch: arm64 }
-          - { os: linux, arch: arm }
           - { os: windows, arch: amd64 }
           - { os: windows, arch: arm64 }
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # 获取完整的 git 历史记录
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      - name: Install pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 9.15.1
+          run_install: false
 
-      - name: Cache pnpm modules
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
         uses: actions/cache@v3
         with:
-          path: |
-            web/.pnpm-store
-            web/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('web/pnpm-lock.yaml') }}
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('web/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
+            ${{ runner.os }}-pnpm-store-
 
-      - name: Build frontend
+      - name: Build Frontend
         working-directory: web
         run: |
-          echo "开始构建前端..."
-          pnpm install --no-frozen-lockfile
-          if [ $? -ne 0 ]; then
-            echo "pnpm install 失败"
-            exit 1
-          fi
+          echo "Installing dependencies..."
+          pnpm install
+          echo "Building frontend..."
           pnpm run build
-          if [ $? -ne 0 ]; then
-            echo "pnpm build 失败"
-            exit 1
-          fi
-          echo "前端构建完成"
+          echo "Frontend build completed"
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
+          cache: true
 
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: go-modules-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-modules-${{ runner.os }}-
-
-      - name: Build backend
+      - name: Build Backend
         env:
           GOOS: ${{ matrix.platform.os }}
           GOARCH: ${{ matrix.platform.arch }}
         run: |
+          echo "Building for ${{ matrix.platform.os }}-${{ matrix.platform.arch }}"
           mkdir -p bin
           if [ "${{ matrix.platform.os }}" = "windows" ]; then
-            go build -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}.exe ./main.go
+            go build -v -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}.exe ./main.go
           else
-            go build -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }} ./main.go
+            go build -v -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }} ./main.go
           fi
 
-      - name: Sanitize tag name
-        id: sanitize_tag
-        run: |
-          TAG_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///' | tr -cd 'a-zA-Z0-9._-')
-          echo "sanitized_tag=$TAG_NAME" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        id: create_release
+      - name: Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            bin/harbor-api-*
+          files: bin/harbor-api-*
           name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
+          generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          fail_on_unmatched_files: true
-
-      - name: Get Release Upload URL
-        id: get_upload_url
-        run: |
-          if [[ "${{ steps.create_release.outputs.upload_url }}" == "" ]]; then
-            echo "upload_url=$(curl -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.sanitize_tag.outputs.sanitized_tag }}" \
-              | jq -r '.upload_url' | sed 's/{.*}//')" >> $GITHUB_OUTPUT
-          else
-            echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_upload_url.outputs.upload_url }}
-          asset_path: bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}${{ matrix.platform.os == 'windows' && '.exe' || '' }}
-          asset_name: harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}${{ matrix.platform.os == 'windows' && '.exe' || '' }}
-          asset_content_type: application/octet-stream
