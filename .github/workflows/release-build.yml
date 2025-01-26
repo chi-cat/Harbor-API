@@ -30,6 +30,9 @@ jobs:
           cache: 'pnpm'
           working-directory: web
 
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.15.1 --activate
+
       - name: Install frontend dependencies
         run: cd web && pnpm install
 
