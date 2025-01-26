@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # 设置 job 超时时间为 30 分钟
+    timeout-minutes: 60  # 增加超时时间到 60 分钟
     strategy:
       matrix:
         platform:
@@ -28,16 +28,39 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.1
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            web/.pnpm-store
+            web/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: Build frontend
         working-directory: web
         run: |
-          npm install
-          npm run build
+          pnpm install
+          pnpm run build
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'  # 根据你的 Go 版本需求调整
+          go-version: '1.21'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: go-modules-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-modules-${{ runner.os }}-
 
       - name: Build backend
         env:
