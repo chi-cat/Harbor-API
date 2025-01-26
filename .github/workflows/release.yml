@@ -24,17 +24,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'pnpm'
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install pnpm
-        run: corepack prepare pnpm@latest --activate
 
       - name: Build frontend
         working-directory: web
-        run: pnpm install && pnpm build
+        run: |
+          npm install
+          npm run build
 
       - name: Set up Go
         uses: actions/setup-go@v4
