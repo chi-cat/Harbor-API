@@ -27,11 +27,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'pnpm'
           working-directory: web
 
       - name: Install frontend dependencies
-        run: cd web && npm install
+        run: cd web && pnpm install
 
       - name: Build frontend
         run: cd web && DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat ../VERSION) npm run build
