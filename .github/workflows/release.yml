@@ -51,27 +51,7 @@ jobs:
             go build -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }} ./main.go
           fi
 
-      - name: Check if release exists
-        id: check_release
-        uses: actions/github-script@v6
-        with:
-          script: |
-            try {
-              await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: process.env.GITHUB_REF.replace('refs/tags/', '')
-              })
-              return true
-            } catch (error) {
-              if (error.status === 404) {
-                return false
-              }
-              throw error
-            }
-
       - name: Create Release
-        if: steps.check_release.outputs.result == 'false'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -81,13 +61,27 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+        continue-on-error: true  # 即使 release 已存在也继续执行
+
+      - name: Get Release Upload URL
+        id: get_upload_url
+        run: |
+          if [[ "${{ steps.create_release.outputs.upload_url }}" == "" ]]; then
+            echo "upload_url=$(curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${GITHUB_REF#refs/tags/}" \
+              | jq -r '.upload_url' | sed 's/{.*}//')" >> $GITHUB_OUTPUT
+          else
+            echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ steps.get_upload_url.outputs.upload_url }}
           asset_path: bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}${{ matrix.platform.os == 'windows' && '.exe' || '' }}
           asset_name: harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }}${{ matrix.platform.os == 'windows' && '.exe' || '' }}
           asset_content_type: application/octet-stream
