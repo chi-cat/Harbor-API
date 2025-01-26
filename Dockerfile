@@ -1,8 +1,9 @@
-FROM node:18 as builder
+FROM node:18-bullseye as builder
 
 WORKDIR /build
 COPY web/package.json .
-RUN npm install
+RUN apt-get update && apt-get install -y build-essential
+RUN npm install --unsafe-perm
 RUN npm -v && node -v && npm list
 COPY ./web .
 COPY ./VERSION .
