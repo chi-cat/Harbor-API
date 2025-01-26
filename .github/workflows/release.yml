@@ -14,17 +14,29 @@ jobs:
           - { os: linux, arch: amd64 }
           - { os: linux, arch: arm64 }
           - { os: windows, arch: amd64 }
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build frontend
+        working-directory: web
+        run: pnpm install && pnpm build
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'  # 根据你的 Go 版本需求调整
 
-      - name: Build
+      - name: Build backend
         env:
           GOOS: ${{ matrix.platform.os }}
           GOARCH: ${{ matrix.platform.arch }}
