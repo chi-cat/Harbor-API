@@ -51,14 +51,20 @@ jobs:
             go build -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }} ./main.go
           fi
 
+      - name: Sanitize tag name
+        id: sanitize_tag
+        run: |
+          TAG_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///' | tr -cd 'a-zA-Z0-9._-')
+          echo "sanitized_tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ steps.sanitize_tag.outputs.sanitized_tag }}
+          release_name: Release ${{ steps.sanitize_tag.outputs.sanitized_tag }}
           draft: false
           prerelease: false
         continue-on-error: true  # 即使 release 已存在也继续执行
@@ -70,7 +76,7 @@ jobs:
             echo "upload_url=$(curl -s \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${GITHUB_REF#refs/tags/}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.sanitize_tag.outputs.sanitized_tag }}" \
               | jq -r '.upload_url' | sed 's/{.*}//')" >> $GITHUB_OUTPUT
           else
             echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
