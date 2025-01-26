@@ -5,7 +5,13 @@ on:
     tags:
       - 'v*'  # 匹配 v 开头的 tag，比如 v1.0.0
     branches:
-      - main  # 当推送到main分支时触发
+      - main 
+# 添加权限配置
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,8 +53,18 @@ jobs:
       - name: Build frontend
         working-directory: web
         run: |
-          pnpm install
+          echo "开始构建前端..."
+          pnpm install --no-frozen-lockfile
+          if [ $? -ne 0 ]; then
+            echo "pnpm install 失败"
+            exit 1
+          fi
           pnpm run build
+          if [ $? -ne 0 ]; then
+            echo "pnpm build 失败"
+            exit 1
+          fi
+          echo "前端构建完成"
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -83,15 +99,15 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.sanitize_tag.outputs.sanitized_tag }}
-          release_name: Release ${{ steps.sanitize_tag.outputs.sanitized_tag }}
+          files: |
+            bin/harbor-api-*
+          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-        continue-on-error: true  # 即使 release 已存在也继续执行
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true
 
       - name: Get Release Upload URL
         id: get_upload_url
