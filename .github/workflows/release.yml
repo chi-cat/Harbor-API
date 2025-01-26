@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # 设置 job 超时时间为 30 分钟
     strategy:
       matrix:
         platform:
@@ -19,6 +20,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取完整的 git 历史记录
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -48,7 +51,27 @@ jobs:
             go build -o bin/harbor-api-${{ matrix.platform.os }}-${{ matrix.platform.arch }} ./main.go
           fi
 
+      - name: Check if release exists
+        id: check_release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: process.env.GITHUB_REF.replace('refs/tags/', '')
+              })
+              return true
+            } catch (error) {
+              if (error.status === 404) {
+                return false
+              }
+              throw error
+            }
+
       - name: Create Release
+        if: steps.check_release.outputs.result == 'false'
         id: create_release
         uses: actions/create-release@v1
         env:
