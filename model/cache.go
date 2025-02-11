@@ -345,6 +345,17 @@ func CacheGetChannel(id int) (*Channel, error) {
 	return c, nil
 }
 
+func CacheUpdateChannelStatus(id int, status int) {
+	if !common.MemoryCacheEnabled {
+		return
+	}
+	channelSyncLock.Lock()
+	defer channelSyncLock.Unlock()
+	if channel, ok := channelsIDM[id]; ok {
+		channel.Status = status
+	}
+}
+
 func CacheGetModelsByAlias(modelAlias string) []string {
 	d := func() map[string][]string {
 		if !common.MemoryCacheEnabled {

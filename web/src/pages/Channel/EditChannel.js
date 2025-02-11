@@ -193,14 +193,16 @@ const EditChannel = (props) => {
 
 
   const fetchUpstreamModelList = async (name) => {
-    if (inputs['type'] !== 1) {
-      showError(t('仅支持 OpenAI 接口格式'));
-      return;
-    }
+    // if (inputs['type'] !== 1) {
+    //   showError(t('仅支持 OpenAI 接口格式'));
+    //   return;
+    // }
     setLoading(true);
     const models = inputs['models'] || [];
     let err = false;
+
     if (isEdit) {
+      // 如果是编辑模式，使用已有的channel id获取模型列表
       const res = await API.get('/api/channel/fetch_models/' + channelId);
       if (res.data && res.data?.success) {
         models.push(...res.data.data);
@@ -208,30 +210,30 @@ const EditChannel = (props) => {
         err = true;
       }
     } else {
+      // 如果是新建模式，通过后端代理获取模型列表
       if (!inputs?.['key']) {
         showError(t('请填写密钥'));
         err = true;
       } else {
         try {
-          const host = new URL((inputs['base_url'] || 'https://api.openai.com'));
-
-          const url = `https://${host.hostname}/v1/models`;
-          const key = inputs['key'];
-          const res = await axios.get(url, {
-            headers: {
-              'Authorization': `Bearer ${key}`
-            }
+          const res = await API.post('/api/channel/fetch_models', {
+            base_url: inputs['base_url'],
+            type: inputs['type'],
+            key: inputs['key']
           });
-          if (res.data) {
-            models.push(...res.data.data.map((model) => model.id));
+          
+          if (res.data && res.data.success) {
+            models.push(...res.data.data);
           } else {
             err = true;
           }
         } catch (error) {
+          console.error('Error fetching models:', error);
           err = true;
         }
       }
     }
+
     if (!err) {
       handleInputChange(name, Array.from(new Set(models)));
       showSuccess(t('获取模型列表成功'));
@@ -436,6 +438,9 @@ const EditChannel = (props) => {
             value={inputs.type}
             onChange={(value) => handleInputChange('type', value)}
             style={{ width: '50%' }}
+            filter
+            searchPosition='dropdown'
+            placeholder={t('请选择渠道类型')}
           />
           {inputs.type === 3 && (
             <>
@@ -499,6 +504,19 @@ const EditChannel = (props) => {
               />
             </>
           )}
+          <div style={{ marginTop: 10 }}>
+            <Typography.Text strong>{t('名称')}：</Typography.Text>
+          </div>
+          <Input
+            required
+            name="name"
+            placeholder={t('请为渠道命名')}
+            onChange={(value) => {
+              handleInputChange('name', value);
+            }}
+            value={inputs.name}
+            autoComplete="new-password"
+          />
           {inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 36 && (
             <>
               <div style={{ marginTop: 10 }}>
@@ -515,6 +533,77 @@ const EditChannel = (props) => {
                 autoComplete="new-password"
               />
             </>
+          )}
+          <div style={{ marginTop: 10 }}>
+            <Typography.Text strong>{t('密钥')}：</Typography.Text>
+          </div>
+          {batch ? (
+            <TextArea
+              label={t('密钥')}
+              name="key"
+              required
+              placeholder={t('请输入密钥，一行一个')}
+              onChange={(value) => {
+                handleInputChange('key', value);
+              }}
+              value={inputs.key}
+              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+              autoComplete="new-password"
+            />
+          ) : (
+            <>
+              {inputs.type === 41 ? (
+                <TextArea
+                  label={t('鉴权json')}
+                  name="key"
+                  required
+                  placeholder={'{\n' +
+                    '  "type": "service_account",\n' +
+                    '  "project_id": "abc-bcd-123-456",\n' +
+                    '  "private_key_id": "123xxxxx456",\n' +
+                    '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
+                    '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
+                    '  "client_id": "111222333",\n' +
+                    '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
+                    '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
+                    '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
+                    '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
+                    '  "universe_domain": "googleapis.com"\n' +
+                    '}'}
+                  onChange={(value) => {
+                    handleInputChange('key', value);
+                  }}
+                  autosize={{ minRows: 10 }}
+                  value={inputs.key}
+                  autoComplete="new-password"
+                />
+              ) : (
+                <Input
+                  label={t('密钥')}
+                  name="key"
+                  required
+                  placeholder={t(type2secretPrompt(inputs.type))}
+                  onChange={(value) => {
+                    handleInputChange('key', value);
+                  }}
+                  value={inputs.key}
+                  autoComplete="new-password"
+                />
+              )}
+            </>
+          )}
+          {!isEdit && (
+            <div style={{ marginTop: 10, display: 'flex' }}>
+              <Space>
+                <Checkbox
+                  checked={batch}
+                  label={t('批量创建')}
+                  name="batch"
+                  onChange={() => setBatch(!batch)}
+                />
+                <Typography.Text strong>{t('批量创建')}</Typography.Text>
+              </Space>
+            </div>
           )}
           {inputs.type === 22 && (
             <>
@@ -550,19 +639,6 @@ const EditChannel = (props) => {
               />
             </>
           )}
-          <div style={{ marginTop: 10 }}>
-            <Typography.Text strong>{t('名称')}：</Typography.Text>
-          </div>
-          <Input
-            required
-            name="name"
-            placeholder={t('请为渠道命名')}
-            onChange={(value) => {
-              handleInputChange('name', value);
-            }}
-            value={inputs.name}
-            autoComplete="new-password"
-          />
           <div style={{ marginTop: 10 }}>
             <Typography.Text strong>{t('分组')}：</Typography.Text>
           </div>
@@ -884,7 +960,7 @@ const EditChannel = (props) => {
             </Typography.Text>
           </div>
           <TextArea
-            placeholder={t('此项可选，用于复写返回的状态码，比如将claude渠道的400错误复写为500（用于重试），请勿滥用该功能，例如：') + 
+            placeholder={t('此项可选，用于复写返回的状态码，比如将claude渠道的400错误复写为500（用于重试），请勿滥用该功能，例如：') +
               '\n' + JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2)}
             name="status_code_mapping"
             onChange={(value) => {

@@ -11,14 +11,13 @@ import (
 
 var StartTime = time.Now().Unix() // unit: second
 var Version = "v0.0.0"            // this hard coding will be replaced automatically when building, no need to manually change
-var SystemName = "NextDreamAPI"
+var SystemName = "New API"
 var Footer = ""
 var Logo = ""
 var TopUpLink = ""
 var ChatLink = ""
 var ChatLink2 = ""
 var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens
-
 var DisplayInCurrencyEnabled = true
 var DisplayTokenStatEnabled = true
 var DrawingEnabled = true
@@ -31,6 +30,7 @@ var DefaultCollapseSidebar = false // default value of collapse sidebar
 // Any options with "Secret", "Token" in its key won't be return by GetOptions
 
 var SessionSecret = uuid.New().String()
+var CryptoSecret = uuid.New().String()
 
 var OptionMap map[string]string
 var OptionMapRWMutex sync.RWMutex
@@ -231,6 +231,7 @@ const (
 	ChannelTypeVertexAi       = 41
 	ChannelTypeMistral        = 42
 	ChannelTypeDeepseek       = 43
+	ChannelTypeVolcEngine     = 48
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
 
 )
@@ -280,4 +281,9 @@ var ChannelBaseURLs = []string{
 	"",                                          //41
 	"https://api.mistral.ai",                    //42
 	"https://api.deepseek.com",                  //43
+	"",                                          //44
+	"",                                          //45
+	"",                                          //46
+	"",                                          //47
+	"https://ark.cn-beijing.volces.com",         //48
 }
