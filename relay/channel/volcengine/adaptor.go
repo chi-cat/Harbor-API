@@ -10,6 +10,8 @@ import (
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
+	"one-api/relay/constant"
+	"strings"
 )
 
 type Adaptor struct {
@@ -29,7 +31,17 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	return fmt.Sprintf("%s/chat/completions", info.BaseUrl), nil
+	switch info.RelayMode {
+	case constant.RelayModeChatCompletions:
+		if strings.HasPrefix(info.UpstreamModelName, "bot") {
+			return fmt.Sprintf("%s/api/v3/bots/chat/completions", info.BaseUrl), nil
+		}
+		return fmt.Sprintf("%s/api/v3/chat/completions", info.BaseUrl), nil
+	case constant.RelayModeEmbeddings:
+		return fmt.Sprintf("%s/api/v3/embeddings", info.BaseUrl), nil
+	default:
+	}
+	return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
@@ -59,9 +71,14 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
-	if info.IsStream {
-		err, usage = openai.OaiStreamHandler(c, resp, info)
-	} else {
+	switch info.RelayMode {
+	case constant.RelayModeChatCompletions:
+		if info.IsStream {
+			err, usage = openai.OaiStreamHandler(c, resp, info)
+		} else {
+			err, usage = openai.OpenaiHandler(c, resp, info.PromptTokens, info.UpstreamModelName)
+		}
+	case constant.RelayModeEmbeddings:
 		err, usage = openai.OpenaiHandler(c, resp, info.PromptTokens, info.UpstreamModelName)
 	}
 	return
