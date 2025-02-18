@@ -78,6 +78,34 @@ type APGC2DGPTUsageResponse struct {
 	TotalUsed      float64 `json:"total_used"`
 }
 
+type DeepSeekUserBalanceResponse struct {
+	IsAvailable  bool                  `json:"is_available"`
+	BalanceInfos []DeepSeekUserBalance `json:"balance_infos"`
+}
+
+type DeepSeekCurrencyEnum string
+
+const (
+	CNY DeepSeekCurrencyEnum = "CNY"
+	USD DeepSeekCurrencyEnum = "USD"
+)
+
+type DeepSeekUserBalance struct {
+	Currency        DeepSeekCurrencyEnum `json:"currency"`
+	TotalBalance    string               `json:"total_balance"`
+	GrantedBalance  string               `json:"granted_balance"`
+	ToppedUpBalance string               `json:"topped_up_balance"`
+}
+
+type SiliconflowBalanceResponse struct {
+	Code int                    `json:"code"`
+	Data SiliconflowBalanceData `json:"data"`
+}
+
+type SiliconflowBalanceData struct {
+	TotalBalance string `json:"totalBalance"`
+}
+
 // GetAuthHeader get auth header
 func GetAuthHeader(token string) http.Header {
 	h := http.Header{}
@@ -200,6 +228,59 @@ func updateChannelAIGC2DBalance(channel *model.Channel) (float64, error) {
 	return response.TotalAvailable, nil
 }
 
+func updateChannelSiliconflowBalance(channel *model.Channel) (float64, error) {
+	url := fmt.Sprintf("%s/v1/user/info", *channel.BaseURL)
+	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+	if err != nil {
+		return 0, err
+	}
+	response := &SiliconflowBalanceResponse{}
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return 0, err
+	}
+	if response.Code != 20000 {
+		return 0, err
+	}
+	balanceOfInfo, err := strconv.ParseFloat(response.Data.TotalBalance, 64)
+	if err != nil {
+		return 0, err
+	}
+	channel.UpdateBalance(balanceOfInfo / common.USD2RMB)
+	return balanceOfInfo, nil
+}
+
+func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
+	url := fmt.Sprintf("%s/user/balance", *channel.BaseURL)
+	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+	if err != nil {
+		return 0, err
+	}
+	response := &DeepSeekUserBalanceResponse{}
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return 0, err
+	}
+	if !response.IsAvailable {
+		return 0, err
+	}
+	var balance = 0.0
+	for _, info := range response.BalanceInfos {
+		balanceOfInfo, err := strconv.ParseFloat(info.TotalBalance, 64)
+		if err != nil {
+			return 0, err
+		}
+		switch info.Currency {
+		case CNY:
+			balance += balanceOfInfo / common.USD2RMB
+		case USD:
+			balance += balanceOfInfo
+		}
+	}
+	channel.UpdateBalance(balance)
+	return balance, nil
+}
+
 func updateChannelBalance(channel *model.Channel) (float64, error) {
 	baseURL := common.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
@@ -222,6 +303,10 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return updateChannelAPI2GPTBalance(channel)
 	case common.ChannelTypeAIGC2D:
 		return updateChannelAIGC2DBalance(channel)
+	case common.ChannelTypeDeepseek:
+		return updateChannelDeepSeekBalance(channel)
+	case common.ChannelTypeSiliconFlow:
+		return updateChannelSiliconflowBalance(channel)
 	default:
 		return 0, errors.New("尚未实现")
 	}
