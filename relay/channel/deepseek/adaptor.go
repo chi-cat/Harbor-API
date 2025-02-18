@@ -3,15 +3,15 @@ package deepseek
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -39,7 +39,8 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	return fmt.Sprintf("%s/chat/completions/", info.BaseUrl), nil
+	log.Printf("%s/chat/completions", info.BaseUrl)
+	return fmt.Sprintf("%s/chat/completions", info.BaseUrl), nil
 }
 
 func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {

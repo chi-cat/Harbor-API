@@ -36,13 +36,13 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
-	defer close(stopChan)
+	done := make(chan struct{}) // 新增 done channel 用于同步goroutine退出
 
 	// 添加超时处理
 	ticker := time.NewTicker(time.Duration(constant.StreamingTimeout) * time.Second)
 	defer ticker.Stop()
 
-	var streamItems []string // 存储所有流式响应
+	var streamItems []string
 	var responseTextBuilder strings.Builder
 	var toolCount int
 	var mu sync.Mutex
@@ -50,34 +50,36 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 	// 启动goroutine来读取响应数据
 	go func() {
 		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				common.SysError("error closing response body: " + err.Error())
-			}
+			resp.Body.Close()
+			close(dataChan) // 关闭 dataChan
+			close(done)     // 通知主goroutine，扫描goroutine已完成
 		}()
 
 		for scanner.Scan() {
-			data := scanner.Text()
-			if len(data) < 6 { // 忽略空行或格式错误的行
-				continue
+			select {
+			case <-stopChan: // 检查是否需要停止
+				return
+			default:
+				data := scanner.Text()
+				if len(data) < 6 {
+					continue
+				}
+				if data[:6] != "data: " && data[:6] != "[DONE]" {
+					continue
+				}
+				ticker.Reset(time.Duration(constant.StreamingTimeout) * time.Second)
+				mu.Lock()
+				if !strings.HasPrefix(data, "data: [DONE]") {
+					streamItems = append(streamItems, data[6:])
+				}
+				mu.Unlock()
+				dataChan <- data
 			}
-			if data[:6] != "data: " && data[:6] != "[DONE]" {
-				continue
-			}
-			// 重置超时计时器
-			ticker.Reset(time.Duration(constant.StreamingTimeout) * time.Second)
-			mu.Lock()
-			if !strings.HasPrefix(data, "data: [DONE]") {
-				streamItems = append(streamItems, data[6:]) // 存储不含前缀的数据
-			}
-			mu.Unlock()
-			dataChan <- data
 		}
 
-		// 检查scanner错误
 		if err := scanner.Err(); err != nil {
 			common.SysError("error reading stream: " + err.Error())
 		}
-		stopChan <- true
 	}()
 
 	service.SetEventStreamHeaders(c)
@@ -87,7 +89,10 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 	var lastResponseText string
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case data := <-dataChan:
+		case data, ok := <-dataChan:
+			if !ok { // channel已关闭
+				return false
+			}
 			if isFirst {
 				isFirst = false
 				info.SetFirstResponseTime()
@@ -167,10 +172,10 @@ func deepseekStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 				c.Writer.Write([]byte("\n\n"))
 			}
 			return true
-		case <-stopChan:
-			return false
 		case <-ticker.C:
 			common.SysError("streaming timeout")
+			close(stopChan) // 发生超时时，通知scanner goroutine停止
+			<-done          // 等待scanner goroutine完成
 			return false
 		}
 	})
