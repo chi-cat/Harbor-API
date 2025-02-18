@@ -161,10 +161,15 @@ func GetTokenCacheHitStat(logType int, startTimestamp int64, endTimestamp int64,
 	if endTimestamp != 0 {
 		tx = tx.Where("created_at <= ?", endTimestamp)
 	}
-
+	var selectClause string
+	if common.UsingSQLite {
+		selectClause = "created_at - (created_at % ?) as time_bucket, "
+	} else {
+		selectClause = "created_at - MOD(created_at, ?) as time_bucket, "
+	}
 	// 修改SQL查询语法
 	query := tx.Table("logs").
-		Select("created_at - MOD(created_at, ?) as time_bucket, "+
+		Select(selectClause+
 			"CAST(SUM(prompt_tokens - prompt_cache_hit_tokens * 0.15) as DECIMAL(10,0)) as non_cache_tokens, "+
 			"CAST(SUM(prompt_cache_hit_tokens) as DECIMAL(10,0)) as cache_hit_tokens", timeGranularity).
 		Group("time_bucket").
@@ -185,7 +190,9 @@ func GetTokenCacheHitStat(logType int, startTimestamp int64, endTimestamp int64,
 		stat.Time = time.Unix(timeBucket, 0).Format("2006-01-02 15:04:05")
 		stats = append(stats, stat)
 	}
-
+	if stats == nil {
+		stats = make([]TokenCacheHitStat, 0)
+	}
 	return stats, nil
 }
 
