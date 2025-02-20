@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"one-api/common"
@@ -11,13 +12,14 @@ import (
 )
 
 type Ability struct {
-	Group     string  `json:"group" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
-	Model     string  `json:"model" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
-	ChannelId int     `json:"channel_id" gorm:"primaryKey;autoIncrement:false;index"`
-	Enabled   bool    `json:"enabled"`
-	Priority  *int64  `json:"priority" gorm:"bigint;default:0;index"`
-	Weight    uint    `json:"weight" gorm:"default:0;index"`
-	Tag       *string `json:"tag" gorm:"index"`
+	Group      string  `json:"group" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
+	Model      string  `json:"model" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
+	ChannelId  int     `json:"channel_id" gorm:"primaryKey;autoIncrement:false;index"`
+	Enabled    bool    `json:"enabled"`
+	Priority   *int64  `json:"priority" gorm:"bigint;default:0;index"`
+	Weight     uint    `json:"weight" gorm:"default:0;index"`
+	Tag        *string `json:"tag" gorm:"index"`
+	ModelAlias *string `json:"model_alias" gorm:"type:varchar(64);index"`
 }
 
 func GetGroupModels(group string) []string {
@@ -87,21 +89,21 @@ func getChannelQuery(group string, model string, retry int) *gorm.DB {
 		groupCol = `"group"`
 		trueVal = "true"
 	}
-	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
-	channelQuery := DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and (model = ? or model_alias = ?) and enabled = "+trueVal, group, model, model)
+	channelQuery := DB.Where(groupCol+" = ? and (model = ? or model_alias = ?)and enabled = "+trueVal+" and priority = (?)", group, model, model, maxPrioritySubQuery)
 	if retry != 0 {
 		priority, err := getPriority(group, model, retry)
 		if err != nil {
 			common.SysError(fmt.Sprintf("Get priority failed: %s", err.Error()))
 		} else {
-			channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = ?", group, model, priority)
+			channelQuery = DB.Where(groupCol+" = ? and ( model = ? or model_alias = ?) and enabled = "+trueVal+" and priority = ?", group, model, model, priority)
 		}
 	}
 
 	return channelQuery
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, limitsMap map[string]bool, retry int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -114,6 +116,13 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	if err != nil {
 		return nil, err
 	}
+	copyAbilities := make([]Ability, 0)
+	for _, ability := range abilities {
+		if limitsMap == nil || limitsMap[ability.Model] {
+			copyAbilities = append(copyAbilities, ability)
+		}
+	}
+	abilities = copyAbilities
 	channel := Channel{}
 	if len(abilities) > 0 {
 		// Randomly choose one
@@ -141,17 +150,32 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 func (channel *Channel) AddAbilities() error {
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
+	var modelMapping map[string]string
+	if channel.ModelMapping != nil && (*channel.ModelMapping) != "" {
+		s := *channel.ModelMapping
+		if err := json.Unmarshal([]byte(s), &modelMapping); err != nil {
+			return err
+		}
+	} else {
+		modelMapping = make(map[string]string)
+	}
+	invModelMapping := make(map[string]string)
+	for key, val := range modelMapping {
+		invModelMapping[val] = key
+	}
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
+			s := invModelMapping[model]
 			ability := Ability{
-				Group:     group,
-				Model:     model,
-				ChannelId: channel.Id,
-				Enabled:   channel.Status == common.ChannelStatusEnabled,
-				Priority:  channel.Priority,
-				Weight:    uint(channel.GetWeight()),
-				Tag:       channel.Tag,
+				Group:      group,
+				Model:      model,
+				ChannelId:  channel.Id,
+				Enabled:    channel.Status == common.ChannelStatusEnabled,
+				Priority:   channel.Priority,
+				Weight:     uint(channel.GetWeight()),
+				Tag:        channel.Tag,
+				ModelAlias: &s,
 			}
 			abilities = append(abilities, ability)
 		}
@@ -257,4 +281,20 @@ func FixAbility() (int, error) {
 	}
 	InitChannelCache()
 	return count, nil
+}
+
+func GetAlias2Models() map[string][]string {
+	var abilities []*Ability
+	var alias2models = make(map[string][]string)
+	DB.Find(&abilities)
+	for _, ability := range abilities {
+		if ability.Enabled && ability.ModelAlias != nil && (*ability.ModelAlias) != "" {
+			alias := *ability.ModelAlias
+			if alias2models[alias] == nil {
+				alias2models[alias] = make([]string, 0)
+			}
+			alias2models[alias] = append(alias2models[alias], ability.Model)
+		}
+	}
+	return alias2models
 }

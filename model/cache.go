@@ -207,6 +207,7 @@ func CacheIsUserEnabled(userId int) (bool, error) {
 
 var group2model2channels map[string]map[string][]*Channel
 var channelsIDM map[int]*Channel
+var alias2models map[string][]string
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -222,6 +223,7 @@ func InitChannelCache() {
 	for _, ability := range abilities {
 		groups[ability.Group] = true
 	}
+	alias2models = GetAlias2Models()
 	newGroup2model2channels := make(map[string]map[string][]*Channel)
 	newChannelsIDM := make(map[int]*Channel)
 	for group := range groups {
@@ -266,7 +268,7 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func CacheGetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func CacheGetRandomSatisfiedChannel(group string, model string, limitsMap map[string]bool, retry int) (*Channel, error) {
 	if strings.HasPrefix(model, "gpt-4-gizmo") {
 		model = "gpt-4-gizmo-*"
 	}
@@ -276,7 +278,7 @@ func CacheGetRandomSatisfiedChannel(group string, model string, retry int) (*Cha
 
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetRandomSatisfiedChannel(group, model, retry)
+		return GetRandomSatisfiedChannel(group, model, limitsMap, retry)
 	}
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
@@ -341,4 +343,24 @@ func CacheGetChannel(id int) (*Channel, error) {
 		return nil, errors.New(fmt.Sprintf("当前渠道# %d，已不存在", id))
 	}
 	return c, nil
+}
+
+func CacheGetModelsByAlias(modelAlias string) []string {
+	d := func() map[string][]string {
+		if !common.MemoryCacheEnabled {
+			return GetAlias2Models()
+		}
+		channelSyncLock.RLock()
+		defer channelSyncLock.RUnlock()
+		return alias2models
+	}
+	a2ms := d()
+	if a2ms[modelAlias] != nil {
+		ret := a2ms[modelAlias]
+		copyRet := make([]string, len(ret))
+		copy(copyRet, ret)
+		return ret
+	} else {
+		return nil
+	}
 }

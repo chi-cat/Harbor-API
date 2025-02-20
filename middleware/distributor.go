@@ -73,9 +73,10 @@ func Distribute() func(c *gin.Context) {
 			// Select a channel for the user
 			// check token model mapping
 			modelLimitEnable := c.GetBool("token_model_limit_enabled")
+			var tokenModelLimit map[string]bool
 			if modelLimitEnable {
+				modelsByAlias := model.CacheGetModelsByAlias(modelRequest.Model)
 				s, ok := c.Get("token_model_limit")
-				var tokenModelLimit map[string]bool
 				if ok {
 					tokenModelLimit = s.(map[string]bool)
 				} else {
@@ -83,8 +84,18 @@ func Distribute() func(c *gin.Context) {
 				}
 				if tokenModelLimit != nil {
 					if _, ok := tokenModelLimit[modelRequest.Model]; !ok {
-						abortWithOpenAiMessage(c, http.StatusForbidden, "该令牌无权访问模型 "+modelRequest.Model)
-						return
+						allow := func() bool {
+							for _, m := range modelsByAlias {
+								if val, exists := tokenModelLimit[m]; exists && val {
+									return true
+								}
+							}
+							return false
+						}
+						if modelsByAlias == nil || !allow() {
+							abortWithOpenAiMessage(c, http.StatusForbidden, "该令牌无权访问模型 "+modelRequest.Model)
+							return
+						}
 					}
 				} else {
 					// token model limit is empty, all models are not allowed
@@ -94,7 +105,7 @@ func Distribute() func(c *gin.Context) {
 			}
 
 			if shouldSelectChannel {
-				channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model, 0)
+				channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model, tokenModelLimit, 0)
 				if err != nil {
 					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, modelRequest.Model)
 					// 如果错误，但是渠道不为空，说明是数据库一致性问题

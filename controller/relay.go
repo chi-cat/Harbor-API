@@ -90,7 +90,7 @@ func Playground(c *gin.Context) {
 		c.Set("group", group)
 	}
 	c.Set("token_name", "playground-"+group)
-	channel, err := model.CacheGetRandomSatisfiedChannel(group, playgroundRequest.Model, 0)
+	channel, err := model.CacheGetRandomSatisfiedChannel(group, playgroundRequest.Model, nil, 0)
 	if err != nil {
 		message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", group, playgroundRequest.Model)
 		openaiErr = service.OpenAIErrorWrapperLocal(errors.New(message), "get_playground_channel_failed", http.StatusInternalServerError)
@@ -106,9 +106,15 @@ func Relay(c *gin.Context) {
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
 	var openaiErr *dto.OpenAIErrorWithStatusCode
-
+	var tokenModelLimit map[string]bool
+	s, ok := c.Get("token_model_limit")
+	if ok {
+		tokenModelLimit = s.(map[string]bool)
+	} else {
+		tokenModelLimit = map[string]bool{}
+	}
 	for i := 0; i <= common.RetryTimes; i++ {
-		channel, err := getChannel(c, group, originalModel, i)
+		channel, err := getChannel(c, group, originalModel, tokenModelLimit, i)
 		if err != nil {
 			common.LogError(c, err.Error())
 			openaiErr = service.OpenAIErrorWrapperLocal(err, "get_channel_failed", http.StatusInternalServerError)
@@ -169,9 +175,15 @@ func WssRelay(c *gin.Context) {
 	//wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01
 	originalModel := c.GetString("original_model")
 	var openaiErr *dto.OpenAIErrorWithStatusCode
-
+	var tokenModelLimit map[string]bool
+	s, ok := c.Get("token_model_limit")
+	if ok {
+		tokenModelLimit = s.(map[string]bool)
+	} else {
+		tokenModelLimit = map[string]bool{}
+	}
 	for i := 0; i <= common.RetryTimes; i++ {
-		channel, err := getChannel(c, group, originalModel, i)
+		channel, err := getChannel(c, group, originalModel, tokenModelLimit, i)
 		if err != nil {
 			common.LogError(c, err.Error())
 			openaiErr = service.OpenAIErrorWrapperLocal(err, "get_channel_failed", http.StatusInternalServerError)
@@ -225,7 +237,7 @@ func addUsedChannel(c *gin.Context, channelId int) {
 	c.Set("use_channel", useChannel)
 }
 
-func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*model.Channel, error) {
+func getChannel(c *gin.Context, group, originalModel string, limitsMap map[string]bool, retryCount int) (*model.Channel, error) {
 	if retryCount == 0 {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
@@ -239,7 +251,7 @@ func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*m
 			AutoBan: &autoBanInt,
 		}, nil
 	}
-	channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, retryCount)
+	channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, limitsMap, retryCount)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("获取重试渠道失败: %s", err.Error()))
 	}
@@ -362,13 +374,20 @@ func RelayTask(c *gin.Context) {
 	relayMode := c.GetInt("relay_mode")
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
+	var tokenModelLimit map[string]bool
+	s, ok := c.Get("token_model_limit")
+	if ok {
+		tokenModelLimit = s.(map[string]bool)
+	} else {
+		tokenModelLimit = map[string]bool{}
+	}
 	c.Set("use_channel", []string{fmt.Sprintf("%d", channelId)})
 	taskErr := taskRelayHandler(c, relayMode)
 	if taskErr == nil {
 		retryTimes = 0
 	}
 	for i := 0; shouldRetryTaskRelay(c, channelId, taskErr, retryTimes) && i < retryTimes; i++ {
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i)
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, tokenModelLimit, i)
 		if err != nil {
 			common.LogError(c, fmt.Sprintf("CacheGetRandomSatisfiedChannel failed: %s", err.Error()))
 			break
