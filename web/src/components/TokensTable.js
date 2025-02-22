@@ -380,6 +380,16 @@ const TokensTable = () => {
     }
   };
 
+  const loadModels = async () => {
+    let res = await API.get(`/api/user/models`);
+    const { success, data } = res.data;
+    if (success) {
+      return data;
+    } else {
+      return [];
+    }
+  };
+
   const onOpenLink = async (type, url, record) => {
     // console.log(type, url, key);
     let status = localStorage.getItem('status');
@@ -391,10 +401,20 @@ const TokensTable = () => {
     if (serverAddress === '') {
       serverAddress = window.location.origin;
     }
+    var models;
+    if(record.model_limits_enabled){
+      models = record.model_limits.split(',');
+    }else{
+      models = await loadModels();
+    }
+    if(!models.length){
+      showError("没有可用模型");
+    }
     let encodedServerAddress = encodeURIComponent(serverAddress);
     url = url.replaceAll('{address}', encodedServerAddress);
     url = url.replaceAll('{key}', 'sk-' + record.key);
-
+    url = url.replace('{useModel}',models[0]);
+    url = url.replace('{models}',models.join(','))
     window.open(url, '_blank');
   };
 
