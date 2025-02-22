@@ -32,6 +32,11 @@ const MODEL_MAPPING_EXAMPLE = {
   'gpt-3.5-turbo': 'gpt-3.5-turbo-0125'
 };
 
+const OTHER_SENSITIVE_INFO = {
+    "access_key":"",
+    "access_key_secret":""
+}
+
 const STATUS_CODE_MAPPING_EXAMPLE = {
   400: '500'
 };
@@ -533,77 +538,7 @@ const EditChannel = (props) => {
                 autoComplete="new-password"
               />
             </>
-          )}
-          <div style={{ marginTop: 10 }}>
-            <Typography.Text strong>{t('密钥')}：</Typography.Text>
-          </div>
-          {batch ? (
-            <TextArea
-              label={t('密钥')}
-              name="key"
-              required
-              placeholder={t('请输入密钥，一行一个')}
-              onChange={(value) => {
-                handleInputChange('key', value);
-              }}
-              value={inputs.key}
-              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-              autoComplete="new-password"
-            />
-          ) : (
-            <>
-              {inputs.type === 41 ? (
-                <TextArea
-                  label={t('鉴权json')}
-                  name="key"
-                  required
-                  placeholder={'{\n' +
-                    '  "type": "service_account",\n' +
-                    '  "project_id": "abc-bcd-123-456",\n' +
-                    '  "private_key_id": "123xxxxx456",\n' +
-                    '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
-                    '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
-                    '  "client_id": "111222333",\n' +
-                    '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
-                    '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
-                    '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
-                    '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
-                    '  "universe_domain": "googleapis.com"\n' +
-                    '}'}
-                  onChange={(value) => {
-                    handleInputChange('key', value);
-                  }}
-                  autosize={{ minRows: 10 }}
-                  value={inputs.key}
-                  autoComplete="new-password"
-                />
-              ) : (
-                <Input
-                  label={t('密钥')}
-                  name="key"
-                  required
-                  placeholder={t(type2secretPrompt(inputs.type))}
-                  onChange={(value) => {
-                    handleInputChange('key', value);
-                  }}
-                  value={inputs.key}
-                  autoComplete="new-password"
-                />
-              )}
-            </>
-          )}
-          {!isEdit && (
-            <div style={{ marginTop: 10, display: 'flex' }}>
-              <Space>
-                <Checkbox
-                  checked={batch}
-                  label={t('批量创建')}
-                  name="batch"
-                  onChange={() => setBatch(!batch)}
-                />
-                <Typography.Text strong>{t('批量创建')}</Typography.Text>
-              </Space>
-            </div>
+
           )}
           {inputs.type === 22 && (
             <>
@@ -828,21 +763,52 @@ const EditChannel = (props) => {
             autoComplete="new-password"
           />
           <Typography.Text
-            style={{
-              color: 'rgba(var(--semi-blue-5), 1)',
-              userSelect: 'none',
-              cursor: 'pointer'
-            }}
-            onClick={() => {
-              handleInputChange(
-                'model_mapping',
-                JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)
-              );
-            }}
+              style={{
+                color: 'rgba(var(--semi-blue-5), 1)',
+                userSelect: 'none',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                handleInputChange(
+                    'model_mapping',
+                    JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)
+                );
+              }}
           >
             {t('填入模板')}
           </Typography.Text>
-          <div style={{ marginTop: 10 }}>
+          {(inputs.type == 48 || inputs.type == 17) && (<>
+            <div style={{marginTop: 10}}>
+              <Typography.Text strong>{t('其他敏感信息')}：</Typography.Text>
+            </div>
+            <TextArea
+                placeholder={t('此项可选，用于填写像火山/阿里平台的AK,SK：'+`\n${JSON.stringify(OTHER_SENSITIVE_INFO, null,2)}`)}
+                name="other_sensitive_info"
+                onChange={(value) => {
+                  handleInputChange('other_sensitive_info', value);
+                }}
+                autosize
+                value={inputs.other_sensitive_info}
+                autoComplete="new-password"
+            />
+            <Typography.Text
+                style={{
+                  color: 'rgba(var(--semi-blue-5), 1)',
+                  userSelect: 'none',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  handleInputChange(
+                      'other_sensitive_info',
+                      JSON.stringify(OTHER_SENSITIVE_INFO, null, 2)
+                  );
+                }}
+            >
+              {t('填入模板')}
+            </Typography.Text>
+          </>)}
+
+          <div style={{marginTop: 10}}>
             <Typography.Text strong>{t('密钥')}：</Typography.Text>
           </div>
           {batch ? (

@@ -315,14 +315,16 @@ func CacheGetRandomSatisfiedChannel(group string, model string, limitsMap map[st
 	// Calculate the total weight of all channels up to endIdx
 	totalWeight := 0
 	for _, channel := range targetChannels {
-		totalWeight += channel.GetWeight() + smoothingFactor
+		weightOfChannel := channel.GetWeight() + smoothingFactor
+		totalWeight += weightOfChannel - common.ChannelWeights.GetPenaltyWeight(channel.Id, weightOfChannel-1)
 	}
 	// Generate a random value in the range [0, totalWeight)
 	randomWeight := rand.Intn(totalWeight)
 
 	// Find a channel based on its weight
 	for _, channel := range targetChannels {
-		randomWeight -= channel.GetWeight() + smoothingFactor
+		weightOfChannel := channel.GetWeight() + smoothingFactor
+		randomWeight -= weightOfChannel - common.ChannelWeights.GetPenaltyWeight(channel.Id, weightOfChannel-1)
 		if randomWeight < 0 {
 			return channel, nil
 		}

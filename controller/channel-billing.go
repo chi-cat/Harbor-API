@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"one-api/relay/channel/ali"
+	"one-api/relay/channel/volcengine"
 	"one-api/service"
 	"strconv"
 	"time"
@@ -247,7 +249,7 @@ func updateChannelSiliconflowBalance(channel *model.Channel) (float64, error) {
 		return 0, err
 	}
 	channel.UpdateBalance(balanceOfInfo / common.USD2RMB)
-	return balanceOfInfo, nil
+	return balanceOfInfo / common.USD2RMB, nil
 }
 
 func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
@@ -281,6 +283,61 @@ func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
+type AccessKeys struct {
+	AccessKey       string `json:"access_key"`
+	AccessKeySecret string `json:"access_key_secret"`
+}
+
+func updateChannelVolcengineBalance(channel *model.Channel) (float64, error) {
+	sensitiveInfo := channel.OtherSensitiveInfo
+	if sensitiveInfo == nil || *sensitiveInfo == "" {
+		return 0, errors.New("没有配置火山平台的ak或sk")
+	}
+	credentials := &AccessKeys{}
+	err := json.Unmarshal([]byte(*sensitiveInfo), credentials)
+	if err != nil {
+		return 0, err
+	}
+	acct, err := volcengine.RequestQueryBalanceAcct(credentials.AccessKey, credentials.AccessKeySecret)
+	if err != nil {
+		return 0, err
+	}
+	if acct.Error != nil {
+		return 0, errors.New(fmt.Sprintf("%v", *acct.Error))
+	}
+	balanceOfInfo, err := strconv.ParseFloat(*acct.Result.AvailableBalance, 64)
+	if err != nil {
+		return 0, err
+	}
+	channel.UpdateBalance(balanceOfInfo / common.USD2RMB)
+	return balanceOfInfo / common.USD2RMB, nil
+}
+
+func updateChannelAliBalance(channel *model.Channel) (float64, error) {
+	sensitiveInfo := channel.OtherSensitiveInfo
+	if sensitiveInfo == nil || *sensitiveInfo == "" {
+		return 0, errors.New("没有配置阿里平台的ak或sk")
+	}
+	credentials := &AccessKeys{}
+	err := json.Unmarshal([]byte(*sensitiveInfo), credentials)
+	if err != nil {
+		return 0, err
+	}
+	acct, err := ali.RequestQueryAccountBalance(credentials.AccessKey, credentials.AccessKeySecret)
+	if err != nil {
+		return 0, err
+	}
+	balance, err := strconv.ParseFloat(acct.AvailableAmount, 64)
+	if err != nil {
+		return 0, err
+	}
+	if acct.Currency == "CNY" {
+		balance = balance / common.USD2RMB
+	}
+	channel.UpdateBalance(balance)
+	return balance, nil
+}
+
 func updateChannelBalance(channel *model.Channel) (float64, error) {
 	baseURL := common.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
@@ -307,6 +364,10 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return updateChannelDeepSeekBalance(channel)
 	case common.ChannelTypeSiliconFlow:
 		return updateChannelSiliconflowBalance(channel)
+	case common.ChannelTypeVolcEngine:
+		return updateChannelVolcengineBalance(channel)
+	case common.ChannelTypeAli:
+		return updateChannelAliBalance(channel)
 	default:
 		return 0, errors.New("尚未实现")
 	}

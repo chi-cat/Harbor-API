@@ -125,15 +125,19 @@ func GetRandomSatisfiedChannel(group string, model string, limitsMap map[string]
 	abilities = copyAbilities
 	channel := Channel{}
 	if len(abilities) > 0 {
+		// 平滑系数
+		smoothingFactor := 10
 		// Randomly choose one
-		weightSum := uint(0)
+		weightSum := 0
 		for _, ability_ := range abilities {
-			weightSum += ability_.Weight + 10
+			weightOfAbility := int(ability_.Weight) + smoothingFactor
+			weightSum += weightOfAbility - common.ChannelWeights.GetPenaltyWeight(ability_.ChannelId, weightOfAbility-1)
 		}
 		// Randomly choose one
 		weight := common.GetRandomInt(int(weightSum))
 		for _, ability_ := range abilities {
-			weight -= int(ability_.Weight) + 10
+			weightOfAbility := int(ability_.Weight) + smoothingFactor
+			weight -= weightOfAbility - common.ChannelWeights.GetPenaltyWeight(ability_.ChannelId, weightOfAbility-1)
 			//log.Printf("weight: %d, ability weight: %d", weight, *ability_.Weight)
 			if weight <= 0 {
 				channel.Id = ability_.ChannelId

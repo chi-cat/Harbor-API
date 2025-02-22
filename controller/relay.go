@@ -129,6 +129,8 @@ func Relay(c *gin.Context) {
 
 		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), openaiErr)
 
+		common.ChannelWeights.RecordFailure(channel.Id)
+
 		if !shouldRetry(c, openaiErr, common.RetryTimes-i) {
 			break
 		}
@@ -197,7 +199,7 @@ func WssRelay(c *gin.Context) {
 		}
 
 		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), openaiErr)
-
+		common.ChannelWeights.RecordFailure(channel.Id)
 		if !shouldRetry(c, openaiErr, common.RetryTimes-i) {
 			break
 		}
