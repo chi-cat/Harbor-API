@@ -19,19 +19,19 @@ const FooterBar = () => {
   const defaultFooter = (
     <div className='custom-footer'>
       <a
-        href='https://github.com/gtxy27/Harbor-API'
+        href='https://github.com/chi-cat/Harbor-API'
         target='_blank'
         rel='noreferrer'
       >
-        Harbor-API {import.meta.env.VITE_REACT_APP_VERSION}{' '}
+          Fuse-API {import.meta.env.VITE_REACT_APP_VERSION}{' '}
       </a>
       {t('由')}{' '}
       <a
-        href='https://github.com/gtxy27'
+        href='https://github.com/chi-cat'
         target='_blank'
         rel='noreferrer'
       >
-        gtxy27
+        chi-cat
       </a>{' '}
       {t('开发，基于')}{' '}
       <a

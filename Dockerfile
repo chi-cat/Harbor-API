@@ -2,6 +2,7 @@ FROM node:18-bullseye as builder
 
 WORKDIR /build
 COPY web/package.json .
+RUN npm config set -g registry  https://registry.npmmirror.com
 RUN apt-get update && apt-get install -y build-essential
 RUN npm install --unsafe-perm
 RUN npm -v && node -v && npm list
@@ -9,7 +10,7 @@ COPY ./web .
 COPY ./VERSION .
 RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.21 AS builder2
+FROM golang:1.21 AS builder2
 
 ENV GO111MODULE=on \
     CGO_ENABLED=1 \

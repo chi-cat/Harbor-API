@@ -31,20 +31,7 @@ function getId() {
 const Playground = () => {
   const { t } = useTranslation();
   
-  const defaultMessage = [
-    {
-      role: 'user',
-      id: '2',
-      createAt: 1715676751919,
-      content: t('你好'),
-    },
-    {
-      role: 'assistant',
-      id: '3',
-      createAt: 1715676751919,
-      content: t('你好，请问有什么可以帮助您的吗？'),
-    }
-  ];
+  const defaultMessage = [];
 
   const [inputs, setInputs] = useState({
     model: '',

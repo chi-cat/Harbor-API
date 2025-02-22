@@ -8,5 +8,5 @@ build
 logs
 web/dist
 web/node_modules
-
+*_test.go
 
