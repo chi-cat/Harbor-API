@@ -110,7 +110,7 @@ export const CHANNEL_OPTIONS = [
     },
   { key: 25, text: 'Moonshot', value: 25, color: 'green', label: 'Moonshot' },
   { key: 19, text: '360 智脑', value: 19, color: 'blue', label: '360 智脑' },
-  { key: 23, text: '腾讯混元', value: 23, color: 'teal', label: '腾讯混元' },
+  { key: 23, text: '腾讯云', value: 23, color: 'teal', label: '腾讯云' },
   { key: 31, text: '零一万物', value: 31, color: 'green', label: '零一万物' },
   { key: 35, text: 'MiniMax', value: 35, color: 'green', label: 'MiniMax' },
   { key: 37, text: 'Dify', value: 37, color: 'teal', label: 'Dify' },

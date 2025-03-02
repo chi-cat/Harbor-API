@@ -58,7 +58,7 @@ function type2secretPrompt(type) {
     case 22:
       return '按照如下格式输入：APIKey-AppId，例如：fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041';
     case 23:
-      return '按照如下格式输入：AppId|SecretId|SecretKey';
+      return '请注意腾讯云: 混元/Deepseek等模型的Key不能混用';
     case 33:
       return '按照如下格式输入：Ak|Sk|Region';
     default:
@@ -777,7 +777,7 @@ const EditChannel = (props) => {
           >
             {t('填入模板')}
           </Typography.Text>
-          {(inputs.type == 48 || inputs.type == 17) && (<>
+          {(inputs.type == 48 || inputs.type == 17 || inputs.type == 23) && (<>
             <div style={{marginTop: 10}}>
               <Typography.Text strong>{t('其他敏感信息')}：</Typography.Text>
             </div>

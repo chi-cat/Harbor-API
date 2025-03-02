@@ -9,6 +9,7 @@ import (
 	"one-api/common"
 	"one-api/model"
 	"one-api/relay/channel/ali"
+	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/volcengine"
 	"one-api/service"
 	"strconv"
@@ -338,6 +339,29 @@ func updateChannelAliBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
+func updateChannelTencentBalance(channel *model.Channel) (float64, error) {
+	sensitiveInfo := channel.OtherSensitiveInfo
+	if sensitiveInfo == nil || *sensitiveInfo == "" {
+		return 0, errors.New("没有配置腾讯云平台的ak或sk")
+	}
+	credentials := &AccessKeys{}
+	err := json.Unmarshal([]byte(*sensitiveInfo), credentials)
+	if err != nil {
+		return 0, err
+	}
+	acct, err := tencent.RequestQueryBalanceAcct(credentials.AccessKey, credentials.AccessKeySecret)
+	if err != nil {
+		return 0, err
+	}
+	if acct.Error != nil {
+		return 0, errors.New(fmt.Sprintf("%s(%s)", acct.Error.Message, acct.Error.Code))
+	}
+	balance := acct.RealBalance //单位:分
+	balance = balance / 100 / common.USD2RMB
+	channel.UpdateBalance(balance)
+	return balance, nil
+}
+
 func updateChannelBalance(channel *model.Channel) (float64, error) {
 	baseURL := common.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
@@ -368,6 +392,8 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return updateChannelVolcengineBalance(channel)
 	case common.ChannelTypeAli:
 		return updateChannelAliBalance(channel)
+	case common.ChannelTypeTencent:
+		return updateChannelTencentBalance(channel)
 	default:
 		return 0, errors.New("尚未实现")
 	}
