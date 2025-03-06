@@ -88,27 +88,23 @@ const SiderBar = () => {
         itemKey: 'playground',
         to: '/playground',
         icon: <IconCommentStroked />,
-      },
-      {
+      }, ...(isAdmin() ? [{
         text: t('渠道'),
         itemKey: 'channel',
         to: '/channel',
         icon: <IconLayers />,
-        className: isAdmin() ? 'semi-navigation-item-normal' : 'tableHiddle',
-      },
+      }]: []),
       {
         text: t('令牌'),
         itemKey: 'token',
         to: '/token',
         icon: <IconKey />,
-      },
-      {
+      }, ...(isAdmin()?[{
         text: t('用户管理'),
         itemKey: 'user',
         to: '/user',
         icon: <IconUser />,
-        className: isAdmin() ? 'semi-navigation-item-normal' : 'tableHiddle',
-      },
+      }]:[]),
       {
         text: t('日志'),
         itemKey: 'log',
@@ -147,6 +143,7 @@ const SiderBar = () => {
       localStorage.getItem('enable_drawing'),
       localStorage.getItem('enable_task'),
       t,
+        isAdmin(),
     ],
   );
 

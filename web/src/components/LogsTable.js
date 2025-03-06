@@ -146,11 +146,9 @@ const LogsTable = () => {
     {
       title: t('时间'),
       dataIndex: 'timestamp2string',
-    },
-    {
+    }, ...(isAdmin()?[{
       title: t('渠道'),
       dataIndex: 'channel',
-      className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
           record.type === 0 || record.type === 2 ? (
@@ -172,11 +170,9 @@ const LogsTable = () => {
           <></>
         );
       },
-    },
-    {
+    }, {
       title: t('用户'),
       dataIndex: 'username',
-      className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
           <div>
@@ -194,7 +190,7 @@ const LogsTable = () => {
           <></>
         );
       },
-    },
+    }]:[]),
     {
       title: t('令牌'),
       dataIndex: 'token_name',
@@ -306,11 +302,9 @@ const LogsTable = () => {
           <></>
         );
       },
-    },
-    {
+    },...(isAdmin()?[{
       title: t('重试'),
       dataIndex: 'retry',
-      className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         let content = t('渠道') + `：${record.channel}`;
         if (record.other !== '') {
@@ -333,7 +327,7 @@ const LogsTable = () => {
         }
         return isAdminUser ? <div>{content}</div> : <></>;
       },
-    },
+    }]:[]),
     {
       title: t('详情'),
       dataIndex: 'content',

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/User';
 import { useSetTheme, useTheme } from '../context/Theme';
 import { useTranslation } from 'react-i18next';
+import {isAdmin} from "../helpers";
 
 import { API, getLogo, getSystemName, isMobile, showSuccess } from '../helpers';
 import '../index.css';
@@ -48,7 +49,7 @@ const HeaderBar = () => {
     {
       text: t('控制台'),
       itemKey: 'channel',
-      to: '/channel',
+      to: isAdmin() ? '/channel':'/token',
     },
     {
       text: t('模型广场'),
