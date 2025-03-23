@@ -12,6 +12,7 @@ import (
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/volcengine"
 	"one-api/service"
+	"slices"
 	"strconv"
 	"time"
 
@@ -462,6 +463,19 @@ func UpdateChannelBalance(c *gin.Context) {
 	return
 }
 
+var supportUpdateBalanceChannels = []int{
+	common.ChannelTypeOpenAI,
+	common.ChannelTypeCustom,
+	common.ChannelTypeAIProxy,
+	common.ChannelTypeAPI2GPT,
+	common.ChannelTypeAIGC2D,
+	common.ChannelTypeDeepseek,
+	common.ChannelTypeSiliconFlow,
+	common.ChannelTypeVolcEngine,
+	common.ChannelTypeAli,
+	common.ChannelTypeTencent,
+}
+
 func updateAllChannelsBalance() error {
 	channels, err := model.GetAllChannels(0, 0, true, false)
 	if err != nil {
@@ -471,8 +485,7 @@ func updateAllChannelsBalance() error {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue
 		}
-		// TODO: support Azure
-		if channel.Type != common.ChannelTypeOpenAI && channel.Type != common.ChannelTypeCustom {
+		if slices.Index(supportUpdateBalanceChannels, channel.Type) == -1 {
 			continue
 		}
 		balance, err := updateChannelBalance(channel)
