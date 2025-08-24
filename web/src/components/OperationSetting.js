@@ -150,11 +150,11 @@ const OperationSetting = () => {
         {/* 合并模型倍率设置和可视化倍率设置 */}
         <Card style={{ marginTop: '10px' }}>
           <Tabs type="line">
-            <Tabs.TabPane tab={t('模型倍率设置')} itemKey="model">
-              <ModelRatioSettings options={inputs} refresh={onRefresh} />
-            </Tabs.TabPane>
             <Tabs.TabPane tab={t('可视化倍率设置')} itemKey="visual">
               <ModelSettingsVisualEditor options={inputs} refresh={onRefresh} />
+            </Tabs.TabPane>
+            <Tabs.TabPane tab={t('模型倍率设置')} itemKey="model">
+              <ModelRatioSettings options={inputs} refresh={onRefresh} />
             </Tabs.TabPane>
           </Tabs>
         </Card>

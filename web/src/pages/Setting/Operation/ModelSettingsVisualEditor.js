@@ -1,5 +1,5 @@
 // ModelSettingsVisualEditor.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Table, Button, Input, Modal, Form, Space } from '@douyinfe/semi-ui';
 import { IconDelete, IconPlus, IconSearch, IconSave } from '@douyinfe/semi-icons';
 import { showError, showSuccess } from '../../../helpers';
@@ -7,14 +7,57 @@ import { API } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 export default function ModelSettingsVisualEditor(props) {
+  const defaltModelRatio = {
+                price: '',
+                ratio: '',
+                completionRatio: '',
+                priceMode: false,
+                pricePerThousandToken: '',
+                completionpricePerThousandToken: '',
+              }
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [visible, setVisible] = useState(false);
-  const [currentModel, setCurrentModel] = useState(null);
+  const [currentModel, setCurrentModel] = useState({...defaltModelRatio});
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [existsModelNames, setExistsModelNames ] = useState([])
   const [loading, setLoading] = useState(false);
   const pageSize = 10;
+  
+  const loadExistsModelNames = async (exclusions) => {
+    setLoading(true);
+
+    const url = `/api/pricing`;
+    const res = await API.get(url);
+    const { success, message, data } = res.data;
+    if (success) {
+      if(data){
+        setExistsModelNames(data.filter(d => !exclusions.includes(d.model_name))
+                                .map(d =>({value: d.model_name, label: d.model_name})))
+      }
+    } else {
+      showError(message);
+    }
+    setLoading(false);
+  };
+
+
+  const ratio2PricePerThousandToken = (ratio) => {
+    if (ratio === '' || ratio === undefined || ratio === null) return '';
+    const num = parseFloat(ratio);
+    if (isNaN(num) || num < 0) return '';
+    return String(parseFloat((num * 0.002).toFixed(5)));
+  }
+
+  const pricePerThousandToken2Ratio = (pricePerThousandToken) => {
+    if (pricePerThousandToken === '' || pricePerThousandToken === undefined || pricePerThousandToken === null) return '';
+    const num = parseFloat(pricePerThousandToken);
+    if (isNaN(num) || num < 0) return '';
+    return String(parseFloat((num / 0.002).toFixed(5)));
+  }
+
+
 
   useEffect(() => {
     try {
@@ -33,10 +76,14 @@ export default function ModelSettingsVisualEditor(props) {
         name,
         price: modelPrice[name] === undefined ? '' : modelPrice[name],
         ratio: modelRatio[name] === undefined ? '' : modelRatio[name],
-        completionRatio: completionRatio[name] === undefined ? '' : completionRatio[name]
+        completionRatio: completionRatio[name] === undefined ? '' : completionRatio[name],
+        pricePerThousandToken: modelRatio[name] === undefined ? '' :  ratio2PricePerThousandToken(modelRatio[name]),
+        completionpricePerThousandToken: completionRatio[name] === undefined ? '' : ratio2PricePerThousandToken(completionRatio[name]),
       }));
 
       setModels(modelData);
+      const modelNamesWithSetPriceOrRatio = modelData.map(m => m.name)
+      loadExistsModelNames(modelNamesWithSetPriceOrRatio);
     } catch (error) {
       console.error('JSON解析错误:', error);
     }
@@ -155,6 +202,19 @@ export default function ModelSettingsVisualEditor(props) {
       )
     },
     {
+      title: t('每千Token价格($)'),
+      dataIndex: 'pricePerThousandToken',
+      key: 'pricePerThousandToken',
+      render: (text, record) => (
+        <Input
+          value={text}
+          placeholder={t('每千Token价格($)')}
+          disabled={record.price !== ''}
+          onChange={value => updateModel(record.name, 'pricePerThousandToken', value)}
+        />
+      )
+    },
+    {
       title: t('补全倍率'),
       dataIndex: 'completionRatio',
       key: 'completionRatio',
@@ -164,6 +224,19 @@ export default function ModelSettingsVisualEditor(props) {
           placeholder={record.price !== '' ? t('补全倍率') : t('默认补全倍率')}
           disabled={record.price !== ''}
           onChange={value => updateModel(record.name, 'completionRatio', value)}
+        />
+      )
+    },
+    {
+      title: t('每千Token价格($)'),
+      dataIndex: 'completionpricePerThousandToken',
+      key: 'completionpricePerThousandToken',
+      render: (text, record) => (
+        <Input
+          value={text}
+          placeholder={t('每千Token价格($)')}
+          disabled={record.price !== ''}
+          onChange={value => updateModel(record.name, 'completionpricePerThousandToken', value)}
         />
       )
     },
@@ -212,12 +285,26 @@ export default function ModelSettingsVisualEditor(props) {
       name: values.name,
       price: values.price || '',
       ratio: values.ratio || '',
-      completionRatio: values.completionRatio || ''
+      completionRatio: values.completionRatio || '',
+      pricePerThousandToken: values.pricePerThousandToken || '',
+      completionpricePerThousandToken: values.completionpricePerThousandToken || '',
     }, ...prev]);
     setVisible(false);
     showSuccess('添加成功');
   };
 
+  const restCurentModel = ()=> {
+    setCurrentModel({...defaltModelRatio})
+  }
+
+  const formRef = useRef()
+
+  useEffect(() => {
+    // 当currentModel更新时，手动更新Form的值
+    if (formRef.current) {
+      formRef.current.formApi.setValues(currentModel);
+    }
+  }, [currentModel]);
 
   return (
     <>
@@ -263,16 +350,25 @@ export default function ModelSettingsVisualEditor(props) {
       <Modal
         title={t('添加模型')}
         visible={visible}
-        onCancel={() => setVisible(false)}
+        onCancel={() => {
+            restCurentModel()
+            setVisible(false)
+          }}
         onOk={() => {
-          currentModel && addModel(currentModel);
+          currentModel && addModel(currentModel)
+          restCurentModel()
         }}
       >
-        <Form>
-          <Form.Input
+        <Form initValues={currentModel} ref={formRef}>
+          <Form.Select
+            style={{width: "80%"}}
             field="name"
             label={t('模型名称')}
             placeholder="strawberry"
+            optionList={existsModelNames}
+            allowCreate={true}
+            filter={true}
+            renderCreateItem={(input, isFocus, style) => (<div style={{ padding: 10, ...style }}>新模型：{input}</div>)}
             required
             onChange={value => setCurrentModel(prev => ({ ...prev, name: value }))}
           />
@@ -282,15 +378,13 @@ export default function ModelSettingsVisualEditor(props) {
             onChange={checked => {
               setCurrentModel(prev => ({
                 ...prev,
-                price: '',
-                ratio: '',
-                completionRatio: '',
+                ...defaltModelRatio,
                 priceMode: checked
               }));
             }}
           />
           {currentModel?.priceMode ? (
-            <Form.Input
+            <Form.InputNumber
               field="price"
               label={t('固定价格(每次)')}
               placeholder={t('输入每次价格')}
@@ -298,18 +392,46 @@ export default function ModelSettingsVisualEditor(props) {
             />
           ) : (
             <>
-              <Form.Input
+            <Form.Section text={t('输入')}>
+              <Form.InputNumber
                 field="ratio"
                 label={t('模型倍率')}
                 placeholder={t('输入模型倍率')}
-                onChange={value => setCurrentModel(prev => ({ ...prev, ratio: value }))}
+                step={0.0001}
+                shiftStep={0.001}
+                precision={6}
+                onChange={value => setCurrentModel(prev => ({ ...prev, ratio: value,pricePerThousandToken: ratio2PricePerThousandToken(value)  }))}
               />
-              <Form.Input
+              <Form.InputNumber
+                field="pricePerThousandToken"
+                label={t("每千Token价格($)")}
+                placeholder={t('每千Token价格')}
+                step={0.0001}
+                shiftStep={0.001}
+                precision={6}
+                onChange={value => setCurrentModel(prev => ({...prev, ratio: pricePerThousandToken2Ratio(value),pricePerThousandToken: value}))}
+              />
+            </Form.Section>
+            <Form.Section text={t('补全')}>
+              <Form.InputNumber
                 field="completionRatio"
                 label={t('补全倍率')}
                 placeholder={t('输入补全价格')}
-                onChange={value => setCurrentModel(prev => ({ ...prev, completionRatio: value }))}
+                step={0.0001}
+                shiftStep={0.001}
+                precision={6}
+                onChange={value => setCurrentModel(prev => ({ ...prev, completionRatio: value, completionpricePerThousandToken: ratio2PricePerThousandToken(value) }))}
               />
+              <Form.InputNumber
+                field="completionpricePerThousandToken"
+                label={t("每千Token补全价格($)")}
+                placeholder={t('每千Token补全价格')}
+                step={0.0001}
+                shiftStep={0.001}
+                precision={6}
+                onChange={value => setCurrentModel(prev => ({...prev,completionRatio: pricePerThousandToken2Ratio(value),completionpricePerThousandToken: value}))}
+              />
+              </Form.Section>
             </>
           )}
         </Form>
