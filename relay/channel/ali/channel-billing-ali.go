@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"one-api/service"
 	"sort"
 	"strings"
 	"time"
@@ -68,13 +69,13 @@ func RequestQueryAccountBalance(accessKeyId, accessKeySecret string) (*BalanceDa
 	params.Add("Signature", signature)
 
 	// 发送请求
-	client := &http.Client{}
+	client := service.GetHttpClient()
 	reqUrl := fmt.Sprintf("https://%s/?%s", endpoint, params.Encode())
 	request, _ := http.NewRequest("GET", reqUrl, nil)
 	request.Header.Set("Accept", "application/json")
 	resp, err := client.Do(request)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -90,7 +91,7 @@ func RequestQueryAccountBalance(accessKeyId, accessKeySecret string) (*BalanceDa
 	if err := xml.Unmarshal(body, &errorResp); err == nil && errorResp.XMLName.Local == "Error" {
 		return nil, errors.New(errorResp.Message)
 	}
-	return nil, errors.New(fmt.Sprintf("http code: %d", resp.StatusCode))
+	return nil, fmt.Errorf("http code: %d", resp.StatusCode)
 }
 
 func createSignature(params url.Values, accessKeySecret string) string {
