@@ -107,7 +107,8 @@ type SiliconflowBalanceResponse struct {
 }
 
 type SiliconflowBalanceData struct {
-	TotalBalance string `json:"totalBalance"`
+	TotalBalance  string `json:"totalBalance"`
+	ChargeBalance string `json:"chargeBalance"`
 }
 
 // GetAuthHeader get auth header
@@ -246,7 +247,7 @@ func updateChannelSiliconflowBalance(channel *model.Channel) (float64, error) {
 	if response.Code != 20000 {
 		return 0, err
 	}
-	balanceOfInfo, err := strconv.ParseFloat(response.Data.TotalBalance, 64)
+	balanceOfInfo, err := strconv.ParseFloat(response.Data.ChargeBalance, 64)
 	if err != nil {
 		return 0, err
 	}
