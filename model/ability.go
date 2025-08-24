@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"slices"
 	"strings"
 
 	"github.com/samber/lo"
@@ -19,7 +20,7 @@ type Ability struct {
 	Priority   *int64  `json:"priority" gorm:"bigint;default:0;index"`
 	Weight     uint    `json:"weight" gorm:"default:0;index"`
 	Tag        *string `json:"tag" gorm:"index"`
-	ModelAlias *string `json:"model_alias" gorm:"type:varchar(64);index"`
+	ModelAlias *string `json:"model_alias" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
 }
 
 func GetGroupModels(group string) []string {
@@ -165,23 +166,49 @@ func (channel *Channel) AddAbilities() error {
 	}
 	invModelMapping := make(map[string]string)
 	for key, val := range modelMapping {
-		invModelMapping[val] = key
+		if slices.Contains(models_, val) {
+			invModelMapping[val] = key
+		}
 	}
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
 			s := invModelMapping[model]
-			ability := Ability{
-				Group:      group,
-				Model:      model,
-				ChannelId:  channel.Id,
-				Enabled:    channel.Status == common.ChannelStatusEnabled,
-				Priority:   channel.Priority,
-				Weight:     uint(channel.GetWeight()),
-				Tag:        channel.Tag,
-				ModelAlias: &s,
+			if strings.Contains(s, ",") {
+				multiAlias := strings.Split(s, ",")
+				for _, ia := range multiAlias {
+					if ia == "" {
+						continue
+					}
+					alias := ia
+					ability := Ability{
+						Group:      group,
+						Model:      model,
+						ChannelId:  channel.Id,
+						Enabled:    channel.Status == common.ChannelStatusEnabled,
+						Priority:   channel.Priority,
+						Weight:     uint(channel.GetWeight()),
+						Tag:        channel.Tag,
+						ModelAlias: &alias,
+					}
+
+					abilities = append(abilities, ability)
+				}
+			} else {
+
+				ability := Ability{
+					Group:      group,
+					Model:      model,
+					ChannelId:  channel.Id,
+					Enabled:    channel.Status == common.ChannelStatusEnabled,
+					Priority:   channel.Priority,
+					Weight:     uint(channel.GetWeight()),
+					Tag:        channel.Tag,
+					ModelAlias: &s,
+				}
+
+				abilities = append(abilities, ability)
 			}
-			abilities = append(abilities, ability)
 		}
 	}
 	if len(abilities) == 0 {
